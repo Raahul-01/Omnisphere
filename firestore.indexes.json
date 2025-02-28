@@ -1,0 +1,113 @@
+{
+    "indexes": [
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.`Breaking News`",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.best_of_week",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.categories",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.home",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.trending_news",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "category",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "fieldOverrides": []
+  }

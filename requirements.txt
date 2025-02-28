@@ -1,0 +1,11 @@
+flask==3.0.2
+flask-cors==4.0.0
+schedule==1.2.1
+python-dotenv==1.0.1
+requests==2.31.0
+pytrends==4.9.3
+firebase-admin==6.4.0
+beautifulsoup4==4.12.3
+aiohttp==3.9.3
+fuzzywuzzy==0.18.0
+python-dateutil==2.8.2 

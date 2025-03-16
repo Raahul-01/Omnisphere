@@ -1,7 +1,7 @@
 # 🌐 OminiSphere - AI-Powered News & Content Platform
 
 <div align="center">
-  <img src="/public/logo.png" alt="OminiSphere Logo" width="200"/>
+  <img src="/public/fevicon.ico" alt="OminiSphere Logo" width="200"/>
   <p><em>Automated news platform optimized for SEO and passive income generation</em></p>
 </div>
 

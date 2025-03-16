@@ -5,6 +5,7 @@ import { Menu, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/lib/sidebar-context"
 import { useTheme } from "next-themes"
+import Link from "next/link"
 
 export function Navbar() {
   const { toggleLeftSidebar } = useSidebar()
@@ -24,11 +25,13 @@ export function Navbar() {
         </Button>
 
         {/* Logo */}
-        <div className="mr-4 font-bold text-2xl tracking-tight">
-          <span className="text-[#FF7043]">Omini</span>
-          <span className="text-black dark:text-white">Sphere</span>
-          <span className="text-[#FF7043]">.</span>
-        </div>
+        <Link href="/" passHref legacyBehavior>
+          <a className="mr-4 font-bold text-2xl tracking-tight hover:opacity-80 transition-opacity cursor-pointer">
+            <span className="text-[#FF7043]">Omini</span>
+            <span className="text-black dark:text-white">Sphere</span>
+            <span className="text-[#FF7043]">.</span>
+          </a>
+        </Link>
 
         {/* Search bar */}
         <div className="flex-1 max-w-2xl mx-auto">

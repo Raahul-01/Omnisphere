@@ -157,8 +157,8 @@ graph TD
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Raahul-01/Omnisphere.git
-   cd Omnisphere
+   git clone https://github.com/yourusername/ominisphere.git
+   cd ominisphere
    ```
 
 2. **Install frontend dependencies**
@@ -168,6 +168,7 @@ graph TD
 
 3. **Install Python backend dependencies**
    ```bash
+   cd python-backend
    pip install -r requirements.txt
    ```
 
@@ -211,13 +212,8 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
 ...
 
 # API Keys
-GEMINI_API_KEY=your_gemini_api_key
-DEEPSEEK_API_KEY=your_deepseek_api_key
-NEWS_API_KEY=your_news_api_key
-WORLD_NEWS_API_KEY=your_world_news_api_key
-SERPAPI_KEY=your_serpapi_key
-GOOGLE_API_KEY=your_google_api_key
-GOOGLE_CSE_ID=your_google_cse_id
+GEMINI_API_KEY=your_key
+NEWS_API_KEY=your_key
 ...
 ```
 

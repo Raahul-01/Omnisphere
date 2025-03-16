@@ -1,6 +1,5 @@
 "use client"
 
-import { SearchBar } from "@/components/search-bar"
 import { LeftSidebar } from "@/components/left-sidebar"
 import { useState, useEffect } from "react"
 import { db } from "@/lib/firebase"
@@ -79,7 +78,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch multiple featured stories (e.g., top 5)
+        // Fetch featured stories with proper indexing
         const featuredQuery = query(
           collection(db, 'generated_content'),
           where('features.breaking_news', '==', true),
@@ -88,147 +87,80 @@ export default function Home() {
         )
         
         const featuredSnapshot = await getDocs(featuredQuery)
-        const featured = featuredSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: (data.headline || data.title || "Untitled").replace(/\*\*|##/g, ''),
-            content: (data.content || "").replace(/\*\*|##/g, ''),
-            author: {
-              name: data.user || "Anonymous",
-              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user || 'anonymous'}`
-            },
-            category: data.category || "General",
-            timestamp: data.time || new Date().toISOString(),
-            image: data.image_url || "/placeholder.jpg",
-          };
-        });
+        const featured = featuredSnapshot.docs.map(doc => ({
+          id: doc.id,
+          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
+          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
+          author: {
+            name: doc.data().user || "Anonymous",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
+          },
+          category: doc.data().category || "General",
+          timestamp: doc.data().time || new Date().toISOString(),
+          image: doc.data().image_url || "/placeholder.jpg",
+          features: doc.data().features || {}
+        }))
 
         setFeaturedStories(featured)
         
-        // Fetch trending stories
+        // Fetch trending stories with proper indexing
         const trendingQuery = query(
           collection(db, 'generated_content'),
           where('features.trending_news', '==', true),
           orderBy('time', 'desc'),
-          limit(5)
-        );
+          limit(4)
+        )
 
-        const trendingSnapshot = await getDocs(trendingQuery);
-
-        const extractTitle = (content: string): string => {
-          // Check for markdown title patterns and remove them
-          const markdownMatch = content.match(/^(?:\*\*|##\s*)([^*#:]+)(?:\*\*|):/)
-          if (markdownMatch) {
-            return markdownMatch[1].trim()
-          }
-          return content.replace(/\*\*/g, '').split('\n')[0] // Remove all ** and get first line as fallback
-        }
-
-        const trendingContent = trendingSnapshot.docs.map(doc => {
-          const data = doc.data();
-          const contentTitle = extractTitle(data.content || "");
-          
-          return {
-            id: doc.id,
-            title: (data.original_headline || 
-                    data.headline || 
-                    contentTitle || 
-                    "Breaking News").replace(/\*\*/g, ''),
-            content: (data.content || "").replace(/\*\*/g, ''),
-            author: {
-              name: data.user || "Anonymous",
-              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user || 'anonymous'}`
-            },
-            category: data.category || "General",
-            timestamp: data.time || new Date().toISOString(),
-            image: data.image_url || "/placeholder.jpg",
-          };
-        });
-
-        // If we don't have enough trending stories, fetch recent stories
-        if (trendingContent.length < 6) {
-          const recentQuery = query(
-            collection(db, 'generated_content'),
-            orderBy('time', 'desc'),
-            limit(6 - trendingContent.length)
-          );
-          
-          const recentSnapshot = await getDocs(recentQuery);
-          const recentContent = recentSnapshot.docs
-            .filter(doc => !trendingContent.find(t => t.id === doc.id))
-            .map(doc => {
-              const data = doc.data();
-              const contentTitle = extractTitle(data.content || "");
-              
-              return {
+        const trendingSnapshot = await getDocs(trendingQuery)
+        const trending = trendingSnapshot.docs.map(doc => ({
           id: doc.id,
-                title: data.original_headline || 
-                       data.headline || 
-                       contentTitle || 
-                       "Breaking News",
-                content: data.content || "",
+          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
+          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
           author: {
-                  name: data.user || "Anonymous",
-                  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user || 'anonymous'}`
-                },
-                category: data.category || "General",
-                timestamp: data.time || new Date().toISOString(),
-                image: data.image_url || "/placeholder.jpg",
-              };
-            });
-            
-          trendingContent.push(...recentContent);
-        }
+            name: doc.data().user || "Anonymous",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
+          },
+          category: doc.data().category || "General",
+          timestamp: doc.data().time || new Date().toISOString(),
+          image: doc.data().image_url || "/placeholder.jpg",
+          features: doc.data().features || {}
+        }))
 
-        setTrendingStories(trendingContent)
-
-        // Fetch home content
-        const homeQuery = query(
+        setTrendingStories(trending)
+        
+        // Fetch regular feed with proper indexing
+        const feedQuery = query(
           collection(db, 'generated_content'),
-          where('features.Home', '==', true),
+          where('features.home', '==', true),
           orderBy('time', 'desc'),
           limit(10)
         )
-        const homeSnapshot = await getDocs(homeQuery)
-        const homeContent = homeSnapshot.docs.map(doc => ({
+
+        const feedSnapshot = await getDocs(feedQuery)
+        const feed = feedSnapshot.docs.map(doc => ({
           id: doc.id,
-          title: doc.data().headline?.replace(/\*\*|##/g, ''),
+          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
+          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
           author: {
-            name: doc.data().user,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user}`
+            name: doc.data().user || "Anonymous",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
           },
-          category: doc.data().category,
-          timestamp: doc.data().time,
-          image: doc.data().image_url,
-          format: "hourglass" as const,
-          lead: doc.data().content?.replace(/\*\*|##/g, '').substring(0, 100) + "...",
-          body: doc.data().content?.replace(/\*\*|##/g, ''),
-          tail: "Read more...",
-          priority: 3
+          category: doc.data().category || "General",
+          timestamp: doc.data().time || new Date().toISOString(),
+          image: doc.data().image_url || "/placeholder.jpg",
+          features: doc.data().features || {}
         }))
 
-        // Combine and sort all content
-        const allContent = [...featured, ...trendingContent, ...homeContent]
-        const sortedContent = allContent.sort((a, b) => {
-          if (a.priority !== b.priority) {
-            return a.priority - b.priority
-          }
-          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        })
-
-        setFeedData(sortedContent)
+        setFeedData(feed)
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error('Error fetching data:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (!authLoading) {
-      fetchData()
-    }
-  }, [authLoading])
+    fetchData()
+  }, [])
 
   // Rotate featured stories every 2 seconds
   useEffect(() => {

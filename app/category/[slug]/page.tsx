@@ -5,6 +5,7 @@ import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { PageContainer } from "@/components/layout/page-container"
+import { CategoryFeed } from "@/components/category-feed"
 
 const PREDEFINED_CATEGORIES = [
   "Global",
@@ -33,11 +34,12 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const category = params.slug;
+  const { slug } = await params;
+  const category = slug;
   return {
     title: `${category} Articles`,
     description: `Browse all articles in ${category} category`,
-  }
+  };
 }
 
 const getCategoryArticles = cache(async (categoryName: string) => {
@@ -81,49 +83,29 @@ const getCategoryArticles = cache(async (categoryName: string) => {
 });
 
 export default async function CategoryPage({ params }: Props) {
-  if (!params.slug) {
+  const { slug } = await params;
+  
+  if (!slug) {
     notFound();
   }
 
-  try {
-    // Check if category exists in predefined list (case-insensitive)
-    const matchedCategory = PREDEFINED_CATEGORIES.find(
-      cat => cat.toLowerCase() === params.slug.toLowerCase()
-    );
+  // Check if category exists in predefined list (case-insensitive)
+  const matchedCategory = PREDEFINED_CATEGORIES.find(
+    cat => cat.toLowerCase() === slug.toLowerCase()
+  );
 
-    if (!matchedCategory) {
-      notFound();
-    }
-
-    const articles = await getCategoryArticles(matchedCategory);
-
-    if (!articles.length) {
-      return (
-        <PageContainer>
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-2">{matchedCategory}</h2>
-            <p className="text-muted-foreground mb-6">
-              No articles found in this category yet.
-            </p>
-            <Link 
-              href="/categories" 
-              className="text-primary hover:underline"
-            >
-              Browse all categories
-            </Link>
-          </div>
-        </PageContainer>
-      );
-    }
-
-    return (
-      <PageContainer>
-        <h1 className="text-3xl font-bold mb-8">{matchedCategory}</h1>
-        <ArticleFeed articles={articles} />
-      </PageContainer>
-    );
-  } catch (error) {
-    console.error('Error in CategoryPage:', error);
+  if (!matchedCategory) {
     notFound();
   }
+
+  return (
+    <main className="flex flex-col min-h-screen">
+      <div className="flex-1 md:ml-[240px] p-4">
+        <div className="max-w-[700px] mx-auto">
+          <h1 className="text-xl font-bold py-3">{matchedCategory} Articles</h1>
+          <CategoryFeed category={matchedCategory} />
+        </div>
+      </div>
+    </main>
+  );
 } 

@@ -91,6 +91,14 @@ export function SearchBar() {
     }, 100)
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
+  const handleFocus = () => {
+    setIsFocused(true)
+  }
+
   return (
     <div ref={searchRef} className="relative w-full max-w-2xl mx-auto">
       {/* Mobile Search Icon */}
@@ -125,17 +133,19 @@ export function SearchBar() {
           <div className={`
             relative flex items-center transition-all duration-300 w-full
             ${isFocused ? 'ring-2 ring-[#FF7043] ring-offset-2' : 'ring-1 ring-muted'}
-            rounded-full bg-background shadow-sm hover:shadow-md
+            rounded-md bg-background shadow-sm hover:shadow-md
           `}>
             <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
             <Input
-              ref={inputRef}
               type="text"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              ref={inputRef}
               placeholder="Search articles, topics, or keywords..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              className="w-full pl-9 pr-12 h-11 md:h-12 bg-transparent border-none rounded-full focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70 text-base"
+              onChange={handleInputChange}
+              onFocus={handleFocus}
+              autoComplete="off"
+              suppressHydrationWarning
             />
             {isLoading ? (
               <Loader2 className="absolute right-3 h-4 w-4 animate-spin text-muted-foreground" />

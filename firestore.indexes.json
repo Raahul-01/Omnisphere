@@ -107,7 +107,32 @@
             "order": "DESCENDING"
           }
         ]
+      },
+      {
+        "collectionGroup": "bookmarks",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
       }
     ],
-    "fieldOverrides": []
-  }
+    "fieldOverrides": [
+      {
+        "collectionGroup": "bookmarks",
+        "fieldPath": "userId",
+        "indexes": [
+          {
+            "order": "ASCENDING",
+            "queryScope": "COLLECTION_GROUP"
+          }
+        ]
+      }
+    ]
+}

@@ -1,6 +1,5 @@
 "use client"
 
-import { SearchBar } from "@/components/search-bar"
 import { Button } from "@/components/ui/button"
 import { Grid2X2, List, Bookmark } from "lucide-react"
 import { useState, useEffect } from "react"
@@ -131,8 +130,8 @@ const newsItems = [
 ]
 
 export default function Saved() {
-  const [savedArticles, setSavedArticles] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [savedArticles, setSavedArticles] = useState<any[]>([])
 
   useEffect(() => {
     const saved = localStorage.getItem("savedArticles")
@@ -150,66 +149,63 @@ export default function Saved() {
   }
 
   return (
-    <div className="min-h-screen">
-      <SearchBar />
-      <div className="p-4 border-b">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col space-y-8">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Saved Articles</h1>
-          <div className="flex gap-2">
+          <div className="flex items-center space-x-2">
             <Button
-              variant="outline"
+              variant={viewMode === "grid" ? "default" : "ghost"}
               size="icon"
               onClick={() => setViewMode("grid")}
-              className={viewMode === "grid" ? "bg-gray-200" : ""}
             >
               <Grid2X2 className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant={viewMode === "list" ? "default" : "ghost"}
               size="icon"
               onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? "bg-gray-200" : ""}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      </div>
-      <div
-        className={`p-4 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4"}`}
-      >
-        {savedItems.map((item) => (
-          <div key={item.id} className={`border rounded-lg overflow-hidden group ${viewMode === "list" ? "flex" : ""}`}>
-            <div className={`${viewMode === "grid" ? "aspect-video" : "w-1/3"} bg-gray-100 relative`}>
-              <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                onClick={() => toggleSave(item.id)}
-              >
-                <Bookmark className="h-4 w-4 fill-current" />
-              </Button>
-            </div>
-            <div className={`p-4 space-y-2 ${viewMode === "list" ? "w-2/3" : ""}`}>
-              <Link href={`/article/${item.id}`}>
-                <h3 className="font-semibold line-clamp-2 hover:underline">{item.title}</h3>
-              </Link>
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={item.author.avatar} />
-                  <AvatarFallback>{item.author.name[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex items-center text-sm">
-                  <span className="font-medium">{item.author.name}</span>
-                  <span className="mx-1">•</span>
-                  <Badge variant="secondary">{item.author.category}</Badge>
-                </div>
+        <div
+          className={`p-4 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4"}`}
+        >
+          {savedItems.map((item) => (
+            <div key={item.id} className={`border rounded-lg overflow-hidden group ${viewMode === "list" ? "flex" : ""}`}>
+              <div className={`${viewMode === "grid" ? "aspect-video" : "w-1/3"} bg-gray-100 relative`}>
+                <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                  onClick={() => toggleSave(item.id)}
+                >
+                  <Bookmark className="h-4 w-4 fill-current" />
+                </Button>
               </div>
-              <p className="text-sm text-gray-500">{item.timeAgo}</p>
+              <div className={`p-4 space-y-2 ${viewMode === "list" ? "w-2/3" : ""}`}>
+                <Link href={`/article/${item.id}`}>
+                  <h3 className="font-semibold line-clamp-2 hover:underline">{item.title}</h3>
+                </Link>
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={item.author.avatar} />
+                    <AvatarFallback>{item.author.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium">{item.author.name}</span>
+                    <span className="mx-1">•</span>
+                    <Badge variant="secondary">{item.author.category}</Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">{item.timeAgo}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -8,6 +8,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:all": "node start-servers.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -50,7 +51,7 @@
     "date-fns": "^2.30.0",
     "embla-carousel-react": "8.5.1",
     "firebase": "^11.2.0",
-    "firebase-admin": "latest",
+    "firebase-admin": "^13.1.0",
     "framer-motion": "^12.4.7",
     "input-otp": "1.4.1",
     "js-cookie": "^3.0.5",
@@ -64,6 +65,7 @@
     "react-markdown": "^9.0.3",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
+    "sharp": "^0.33.5",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.6.0",
     "vaul": "^0.9.6",

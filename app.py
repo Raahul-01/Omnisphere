@@ -13,11 +13,13 @@ from fuzzywuzzy import fuzz
 import firebase_admin
 from firebase_admin import credentials, firestore
 # Add this import
+import google.generativeai as genai
 from dateutil import parser
 import json
 import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
+import threading
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -39,7 +41,7 @@ REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 GOOGLE_API_KEY = "AIzaSyDAy04td-Ex9MzTuRuCV0U0j_mcZvcVDLc"  # Your Google Custom Search API Key
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")  # Your Custom Search Engine ID
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={GEMINI_API_KEY}"
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 WORLD_NEWS_API_URL = "https://api.worldnewsapi.com/search-news"
@@ -70,40 +72,92 @@ logging.basicConfig(
 )
 
 async def fetch_trends():
-    """Fetch trending topics with fallback options"""
+    """Fetch actual trending news headlines from multiple categories"""
     try:
+        logging.info("Starting to fetch trends...")
+        
         # Try Google Trends first
-        pytrends = TrendReq(hl='en-US', tz=360, timeout=(10,25), retries=2, backoff_factor=0.5)
-        trending_searches = await asyncio.to_thread(pytrends.trending_searches, pn='US')
-        if not trending_searches.empty:
-            return trending_searches.tolist()
-        
-        # Fallback to daily trends if real-time trends fail
         try:
-            daily_trends = await asyncio.to_thread(pytrends.today_searches)
-            if not daily_trends.empty:
-                return daily_trends.tolist()
+            pytrends = TrendReq()
+            logging.info("Attempting to fetch Google Trends...")
+            trending_searches = await asyncio.to_thread(pytrends.trending_searches, pn='US')
+            
+            if not trending_searches.empty:
+                trends = trending_searches.tolist()
+                logging.info(f"Successfully fetched {len(trends)} trends from Google Trends")
+                return trends
         except Exception as e:
-            logging.warning(f"Daily trends fallback failed: {e}")
+            logging.error(f"Google Trends fetch failed: {e}")
         
-        # If both fail, return some default topics
-        return [
-            "Technology News",
-            "World News",
-            "Business Updates",
-            "Science Discoveries",
-            "Entertainment Headlines"
+        logging.info("Falling back to category-specific headlines...")
+        categories = [
+            "technology",
+            "entertainment",
+            "business",
+            "science",
+            "general",
+            "health",
+            "sports",
+            "politics",
+            "world",
+            "environment",
+            "education",
+            "arts",
+            "travel",
+            "food",
+            "fashion",
         ]
+        
+        all_headlines = []
+        
+        # Fetch headlines from each category
+        for category in categories:
+            try:
+                logging.info(f"Fetching headlines for category: {category}")
+                # Use News API to get category-specific headlines
+                params = {
+                    "apiKey": NEWS_API_KEY,
+                    "category": category,
+                    "language": "en",
+                    "pageSize": 5
+                }
+                response = requests.get("https://newsapi.org/v2/top-headlines", params=params)
+                response.raise_for_status()
+                articles = response.json().get("articles", [])
+                
+                # Add actual headlines to our list
+                for article in articles:
+                    if article.get("title") and "null" not in article["title"].lower():
+                        all_headlines.append(article["title"])
+                        logging.info(f"Added headline from {category}: {article['title']}")
+                
+            except Exception as e:
+                logging.error(f"Error fetching {category} headlines: {e}")
+                continue
+        
+        # If we got any headlines, return them
+        if all_headlines:
+            logging.info(f"Successfully fetched {len(all_headlines)} headlines across all categories")
+            return all_headlines[:10]  # Return top 10 headlines
+            
+        logging.warning("No headlines found from categories, trying general news...")
+        
+        # If all above methods fail, try one last direct news fetch
+        try:
+            latest_news = fetch_news("latest news today")
+            if latest_news:
+                headlines = [article["title"] for article in latest_news[:10] if article.get("title")]
+                logging.info(f"Fetched {len(headlines)} headlines from general news")
+                return headlines
+        except Exception as e:
+            logging.error(f"Error fetching latest news: {e}")
+        
+        logging.warning("All methods of fetching headlines failed")
+        return []
+        
     except Exception as e:
-        logging.error(f"Error fetching trends: {e}")
-        # Return default topics on error
-        return [
-            "Technology News",
-            "World News",
-            "Business Updates",
-            "Science Discoveries",
-            "Entertainment Headlines"
-        ]
+        logging.error(f"Error in fetch_trends: {e}")
+        return []
 
 def validate_environment():
     """Check required environment variables and directories"""
@@ -172,11 +226,11 @@ def check_existing_content(topic, save_dir=SAVE_DIR):
         if not docs:
             return False
 
-        # Check if the existing content is from the last 2 hours
+        # Check if the existing content is from the last 30 minutes
         for doc in docs:
             content_time = parser.parse(doc.to_dict().get('time', ''))
             current_time = datetime.now(timezone.utc)
-            if (current_time - content_time) <= timedelta(hours=2):
+            if (current_time - content_time) <= timedelta(minutes=30):  # Reduced from 2 hours to 30 minutes
                 return True
             return False
     except Exception as e:
@@ -1010,178 +1064,16 @@ def run_job():
 
 # Update the main scheduling section
 if __name__ == "__main__":
-    logging.info("Starting scheduled content generation service with region rotation")
+    logging.info("Starting scheduled content generation service")
     
-    # Run immediately on startup
-    run_job()
+    # Schedule the main function to run every 6 hours
+    schedule.every(6).hours.do(run_job)
     
-    # Schedule to run every 30 minutes
-    schedule.every(30).minutes.do(run_job)
+    # Start the scheduler in a separate thread
+    scheduler_thread = threading.Thread(target=run_job)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
     
-    # Keep the script running with better error handling
-    while True:
-        try:
-            schedule.run_pending()
-            time.sleep(1)
-            
-            # Add heartbeat logging every 5 minutes
-            if int(time.time()) % 300 == 0:  # Log every 5 minutes
-                logging.info("Service is running... Waiting for next scheduled run")
-                
-        except KeyboardInterrupt:
-            logging.info("Service stopped by user")
-            break
-        except Exception as e:
-            logging.error(f"Error in scheduler: {str(e)}")
-            logging.info("Attempting to continue service...")
-            time.sleep(30)  # Wait 30 seconds before retrying
-
-# Add more SERPAPI keys and adjust rate limiting
-SERPAPI_KEYS = [
-    "8896cdea629dcc3663aa3c065c3e06fd3326ea69afe9cbb020dcd45dec439048",
-    # Add your additional SerpAPI keys here if available
-]
-SERPAPI_RATE_LIMIT = {
-    'calls_per_key': 100,  # Maximum calls per key per hour
-    'window_seconds': 3600,  # 1 hour window
-    'min_delay': 2,  # Minimum delay between calls
-    'backoff_factor': 1.5,  # Exponential backoff factor
-    'max_retries': 3  # Maximum number of retries per request
-}
-
-# Add key usage tracking
-serpapi_usage = {key: {'calls': 0, 'last_reset': time.time(), 'last_call': 0} for key in SERPAPI_KEYS}
-
-def get_available_serpapi_key():
-    """Get the next available SERPAPI key with capacity"""
-    current_time = time.time()
-    
-    for key in SERPAPI_KEYS:
-        # Reset usage counter if window has passed
-        if current_time - serpapi_usage[key]['last_reset'] > SERPAPI_RATE_LIMIT['window_seconds']:
-            serpapi_usage[key] = {'calls': 0, 'last_reset': current_time, 'last_call': 0}
-        
-        # Check if key has remaining capacity
-        if serpapi_usage[key]['calls'] < SERPAPI_RATE_LIMIT['calls_per_key']:
-            # Ensure minimum delay between calls
-            time_since_last_call = current_time - serpapi_usage[key]['last_call']
-            if time_since_last_call < SERPAPI_RATE_LIMIT['min_delay']:
-                time.sleep(SERPAPI_RATE_LIMIT['min_delay'] - time_since_last_call)
-            
-            return key
-    
-    return None
-
-def update_serpapi_usage(key):
-    """Update usage tracking for a SERPAPI key"""
-    current_time = time.time()
-    serpapi_usage[key]['calls'] += 1
-    serpapi_usage[key]['last_call'] = current_time
-
-# Modified fetch_serpapi_news function with better rate limiting
-def fetch_serpapi_news(query, attempt=1):
-    """Fetch news articles using Google News SerpAPI with improved rate limiting"""
-    key = get_available_serpapi_key()
-    if not key:
-        logging.warning("All SerpAPI keys exhausted, falling back to alternative news source")
-        return fetch_alternative_news(query)
-    
-    try:
-        params = {
-            "engine": "google_news",
-            "q": query,
-            "api_key": key,
-            "num": MAX_ARTICLES
-        }
-        
-        response = requests.get(SERPAPI_URL, params=params, timeout=TIMEOUT)
-        
-        if response.status_code == 429:  # Rate limit hit
-            logging.warning(f"Rate limit hit for key: {key[:8]}...")
-            if attempt <= SERPAPI_RATE_LIMIT['max_retries']:
-                wait_time = SERPAPI_RATE_LIMIT['min_delay'] * (SERPAPI_RATE_LIMIT['backoff_factor'] ** attempt)
-                time.sleep(wait_time)
-                return fetch_serpapi_news(query, attempt + 1)
-            return fetch_alternative_news(query)
-            
-        response.raise_for_status()
-        update_serpapi_usage(key)
-        
-        data = response.json()
-        articles = []
-        for article in data.get("news_results", []):
-            articles.append({
-                "source": {"name": article.get("source", {}).get("title", "Unknown Source")},
-                "title": article.get("title", ""),
-                "description": article.get("snippet", ""),
-                "publishedAt": article.get("date", "")
-            })
-        return articles
-        
-    except Exception as e:
-        logging.error(f"SerpAPI request failed: {str(e)}")
-        return fetch_alternative_news(query)
-
-def fetch_alternative_news(query):
-    """Fallback method when SerpAPI is unavailable"""
-    try:
-        # Try World News API first
-        world_news = fetch_world_news(query)
-        if world_news:
-            return world_news
-            
-        # If World News fails, try regular News API
-        return fetch_news(query)
-    except Exception as e:
-        logging.error(f"Alternative news sources failed: {str(e)}")
-        return []
-
-# Modify fetch_news_cascade to handle SerpAPI unavailability
-def fetch_news_cascade(query):
-    """Fetch news using multiple APIs in cascade with improved fallback"""
-    all_articles = []
-    
-    # Try News API first
-    news_api_articles = fetch_news(query)
-    if news_api_articles:
-        all_articles.extend(news_api_articles)
-    
-    # Only try SerpAPI if we need more articles
-    if len(all_articles) < MAX_ARTICLES:
-        serp_articles = fetch_serpapi_news(query)
-        if serp_articles:
-            all_articles.extend(serp_articles)
-    
-    # Finally try World News API if needed
-    if len(all_articles) < MAX_ARTICLES:
-        world_articles = fetch_world_news(query)
-        if world_articles:
-            all_articles.extend(world_articles)
-    
-    return all_articles[:MAX_ARTICLES]
-
-@app.route('/api/articles', methods=['GET'])
-def get_articles():
-    category = request.args.get('category', '')
-    
-    try:
-        # Query Firestore for articles in the biography category
-        articles_ref = db.collection("generated_content")
-        query = articles_ref.where("category", "==", category.lower())
-        docs = query.get()
-        
-        articles = []
-        for doc in docs:
-            data = doc.to_dict()
-            articles.append({
-                'id': doc.id,
-                'title': data.get('title', ''),
-                'excerpt': data.get('content', '')[:200] + '...' if data.get('content') else '',
-                'category': data.get('category', ''),
-                'timestamp': data.get('time', '')
-            })
-        
-        return jsonify({'articles': articles})
-    except Exception as e:
-        print(f"Error fetching articles: {str(e)}")
-        return jsonify({'articles': []})
+    # Run the Flask app with proper host and port for Vercel
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

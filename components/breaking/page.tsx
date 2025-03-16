@@ -1,4 +1,3 @@
-import { Feed } from "@/components/feed"
 
 const BREAKING_NEWS = [
   {
@@ -40,7 +39,6 @@ export default function Breaking() {
       <div className="flex-1 md:ml-[240px] p-4">
         <div className="max-w-[700px] mx-auto">
           <h1 className="text-xl font-bold py-3">Breaking News</h1>
-          <Feed items={BREAKING_NEWS} showHeader={false} />
         </div>
       </div>
     </main>

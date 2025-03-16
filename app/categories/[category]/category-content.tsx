@@ -1,8 +1,19 @@
 "use client"
 
+import React from 'react'
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Clock, BookmarkPlus, TrendingUp, Crown, Star, ArrowRight, BookOpen, LineChart } from "lucide-react"
+import Link from "next/link"
+import { formatDistanceToNow } from "date-fns"
+import Image from "next/image"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { db } from "@/lib/firebase"
+import { collection, query, where, orderBy, limit, getDocs, DocumentData } from "firebase/firestore"
 import { CategoryFeed } from "@/components/category-feed"
 import { LeftSidebar } from "@/components/left-sidebar"
-import { RightSidebar } from "@/components/right-sidebar"
 
 interface CategoryPageContentProps {
   category: string
@@ -27,7 +38,6 @@ export function CategoryPageContent({ category }: CategoryPageContentProps) {
           <CategoryFeed category={decodedCategory} />
         </div>
       </div>
-      <RightSidebar />
     </main>
   )
 } 

@@ -1,5 +1,6 @@
 "use client"
 
+import React, { Suspense } from 'react'
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { collection, query as firestoreQuery, where, orderBy, limit, getDocs, DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
@@ -35,7 +36,7 @@ interface FirestoreArticle extends DocumentData {
   image_url?: string;
 }
 
-export default function SearchResults() {
+function SearchContent() {
   const searchParams = useSearchParams()
   const searchQuery = searchParams?.get("q") || ""
   const [results, setResults] = useState<SearchResult[]>([])
@@ -186,6 +187,14 @@ export default function SearchResults() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SearchContent />
+    </Suspense>
   )
 }
 

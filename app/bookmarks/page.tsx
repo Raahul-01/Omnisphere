@@ -1,4 +1,3 @@
-import { SearchBar } from "@/components/search-bar"
 import { Button } from "@/components/ui/button"
 import { Plus, Bookmark, MoreVertical } from "lucide-react"
 
@@ -8,7 +7,7 @@ export default function Bookmarks() {
       <div className="flex-1 md:ml-[260px]">
         <div className="max-w-[1200px] mx-auto px-4">
           <div className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4">
-            <SearchBar />
+            {/* Remove SearchBar component if it exists */}
           </div>
           <div className="py-4 border-b">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

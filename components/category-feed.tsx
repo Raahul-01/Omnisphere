@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Article } from "@/types/article"
 import { getArticlesByCategory } from "@/services/articles"
-import { isFeatureEnabled } from '@/src/config/features'
+import { isFeatureEnabled } from '@/config/features'
 import { useRouter } from 'next/navigation'
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,7 @@ import Image from "next/image"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { db } from "@/lib/firebase"
+import { db } from "@/src/lib/firebase"
 import { collection, query, where, orderBy, limit, getDocs, DocumentData } from "firebase/firestore"
 
 interface CategoryFeedProps {

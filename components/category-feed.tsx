@@ -1,20 +1,20 @@
 "use client"
 
 import React, { useEffect, useState, useMemo } from 'react'
-import { Article } from "../types/article"
-import { getArticlesByCategory } from "../services/articles"
-import { isFeatureEnabled } from '../src/config/features'
+import { Article } from "@/types/article"
+import { getArticlesByCategory } from "@/services/articles"
+import { isFeatureEnabled } from '@/src/config/features'
 import { useRouter } from 'next/navigation'
-import { Card } from "./ui/card"
-import { Badge } from "./ui/badge"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Clock, BookmarkPlus, TrendingUp, Crown, Star, ArrowRight, BookOpen, LineChart } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar"
-import { Button } from "./ui/button"
-import { Separator } from "./ui/separator"
-import { db } from "../lib/firebase"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { db } from "@/lib/firebase"
 import { collection, query, where, orderBy, limit, getDocs, DocumentData } from "firebase/firestore"
 
 interface CategoryFeedProps {

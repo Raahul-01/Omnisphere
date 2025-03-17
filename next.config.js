@@ -16,18 +16,29 @@ if (typeof process !== 'undefined') {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: [
+      'firebasestorage.googleapis.com',
+      'api.dicebear.com',
+      'picsum.photos',
+      'upload.wikimedia.org',
+      'electrek.co',
+      'assets.nintendo.com',
+      'images.unsplash.com',
+      'images.pexels.com',
+      'wp-content',
+      'ui-avatars.com'
+    ],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       }
     ],
-    domains: [
-      'lookaside.fbsbx.com',
-      'lookaside.instagram.com',
-      'ui-avatars.com',
-      'firebasestorage.googleapis.com'
-    ]
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    minimumCacheTTL: 60,
+    unoptimized: true
   },
   experimental: {
     serverActions: {

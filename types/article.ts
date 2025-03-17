@@ -7,7 +7,8 @@ export interface Article {
   imageUrl?: string
   author?: {
     name: string
-    avatar?: string
+    avatar: string
   }
   timestamp?: string
+  createdAt?: any
 } 

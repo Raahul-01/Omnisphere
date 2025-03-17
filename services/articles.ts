@@ -1,17 +1,23 @@
-import { Article } from "@/types/article"
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Article } from '@/types/article';
 
 export async function getArticlesByCategory(category: string): Promise<Article[]> {
   try {
-    const response = await fetch(`/api/articles?category=${category}`)
-    const data = await response.json()
+    const postsRef = collection(db, 'posts');
+    const q = query(
+      postsRef,
+      where('categories', 'array-contains', category),
+      orderBy('createdAt', 'desc')
+    );
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch articles')
-    }
-    
-    return data.articles || []
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Article[];
   } catch (error) {
-    console.error('Error fetching articles:', error)
-    return []
+    console.error('Error fetching articles:', error);
+    return [];
   }
 } 

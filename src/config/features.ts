@@ -1,12 +1,29 @@
+interface FeatureFlags {
+  [key: string]: boolean;
+}
+
+const features: FeatureFlags = {
+  Categories: true,
+  Search: true,
+  Authentication: true,
+  DarkMode: true,
+  Comments: true,
+  Bookmarks: true,
+  Share: true,
+  Analytics: process.env.NODE_ENV === 'production',
+};
+
+export function isFeatureEnabled(featureName: string): boolean {
+  return features[featureName] ?? false;
+}
+
 export const featureFlags = {
   Home: true,
   Articles: true,
   'Jobs/Careers': false,
   'Trending News': true,
-  Categories: true,
   'Best of Week': false,
   History: false,
-  Bookmarks: false,
   Biography: true
 } as const;
 
@@ -23,10 +40,6 @@ export const pageFeatureMapping: Record<string, FeatureFlag> = {
   '/bookmarks': 'Bookmarks',
   '/biography': 'Biography'
 };
-
-export function isFeatureEnabled(feature: FeatureFlag): boolean {
-  return featureFlags[feature] ?? false;
-}
 
 export function isPageEnabled(path: string): boolean {
   const feature = pageFeatureMapping[path];

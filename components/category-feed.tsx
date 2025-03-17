@@ -1,7 +1,6 @@
 "use client"
 
-import React from 'react'
-import { useEffect, useState } from "react"
+import React, { useEffect, useState, useMemo } from 'react'
 import { Article } from "../types/article"
 import { getArticlesByCategory } from "../services/articles"
 import { isFeatureEnabled } from '../src/config/features'
@@ -74,17 +73,14 @@ const DynamicContent = ({ article }: { article: Article }) => {
 // ArticleCard component
 const ArticleCard = ({ article }: { article: Article }) => {
   const [imageError, setImageError] = useState(false);
-  const fallbackImage = `/images/default-article.jpg`;  // Using a local fallback image
+  const [isLoading, setIsLoading] = useState(true);
+  const defaultImage = '/images/default-article.jpg';
   
-  // Function to get the final image URL
-  const getImageUrl = (url: string | undefined): string => {
-    const defaultImage = '/images/default-article.jpg';
-    if (!url) return defaultImage;
-    
+  // Memoize the image URL calculation
+  const imageUrl = useMemo(() => {
+    if (!article.imageUrl) return defaultImage;
     try {
-      const urlObj = new URL(url);
-      
-      // List of blocked domains that should always use default
+      const urlObj = new URL(article.imageUrl);
       const blockedDomains = [
         'lookaside.fbsbx.com',
         'lookaside.instagram.com',
@@ -92,12 +88,10 @@ const ArticleCard = ({ article }: { article: Article }) => {
         'fb.com'
       ];
       
-      // If it's a blocked domain, return default
       if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
         return defaultImage;
       }
 
-      // List of trusted domains that don't need proxying
       const trustedDomains = [
         'firebasestorage.googleapis.com',
         'api.dicebear.com',
@@ -110,38 +104,34 @@ const ArticleCard = ({ article }: { article: Article }) => {
         'ui-avatars.com'
       ];
       
-      // If it's a trusted domain, use directly
-      if (trustedDomains.some(domain => urlObj.hostname.includes(domain))) {
-        return url;
-      }
-
-      // For other domains, try to use a placeholder image service
-      return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(url)}`;
+      return trustedDomains.some(domain => urlObj.hostname.includes(domain))
+        ? article.imageUrl
+        : defaultImage;
     } catch {
       return defaultImage;
     }
-  };
-
-  // Use the getImageUrl function for both the main image and fallback
-  const imageUrl = getImageUrl(article.imageUrl);
+  }, [article.imageUrl]);
 
   return (
-    <Link href={`/article/${article.id}`} className="group">
+    <Link href={`/article/${article.id}`} className="group" prefetch={false}>
       <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300">
         <div className="relative h-52 overflow-hidden">
+          <div className={`absolute inset-0 bg-gray-200 animate-pulse ${!isLoading && 'hidden'}`} />
           <Image
-            src={imageError ? '/images/default-article.jpg' : imageUrl}
+            src={imageError ? defaultImage : imageUrl}
             alt={article.title || 'Article image'}
             fill
-            className="object-cover transform group-hover:scale-105 transition-transform duration-300"
+            className={`object-cover transform group-hover:scale-105 transition-transform duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             onError={() => setImageError(true)}
+            onLoad={() => setIsLoading(false)}
             priority={false}
             unoptimized={true}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
           />
           <Badge 
             variant="secondary" 
-            className="absolute top-4 left-4 bg-white/90 dark:bg-black/50"
+            className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 z-10"
           >
             {article.category}
           </Badge>
@@ -185,6 +175,17 @@ export function CategoryFeed({ category }: CategoryFeedProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Memoize the query
+  const postsQuery = useMemo(() => {
+    const postsRef = collection(db, 'posts');
+    return query(
+      postsRef,
+      where('categories', 'array-contains', category),
+      orderBy('createdAt', 'desc'),
+      limit(12) // Limit initial load
+    );
+  }, [category]);
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -197,83 +198,31 @@ export function CategoryFeed({ category }: CategoryFeedProps) {
     async function loadArticles() {
       try {
         setIsLoading(true);
-        const postsRef = collection(db, 'posts');
-        const q = query(
-          postsRef,
-          where('categories', 'array-contains', category),
-          orderBy('createdAt', 'desc')
-        );
+        const querySnapshot = await getDocs(postsQuery);
         
-        const querySnapshot = await getDocs(q);
+        if (!isMounted) return;
+
         const posts = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
-        const items: FeedItem[] = posts.map((post: any) => {
-          // Function to validate and clean image URL
-          const cleanImageUrl = (url: string | undefined): string => {
-            const defaultImage = '/images/default-article.jpg';
-            if (!url) return defaultImage;
-            
-            try {
-              const urlObj = new URL(url);
-              
-              // List of blocked domains that should always use default
-              const blockedDomains = [
-                'lookaside.fbsbx.com',
-                'lookaside.instagram.com',
-                'facebook.com',
-                'fb.com'
-              ];
-              
-              // If it's a blocked domain, return default
-              if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
-                return defaultImage;
-              }
-
-              // List of trusted domains that don't need proxying
-              const trustedDomains = [
-                'firebasestorage.googleapis.com',
-                'api.dicebear.com',
-                'picsum.photos',
-                'upload.wikimedia.org',
-                'electrek.co',
-                'assets.nintendo.com',
-                'images.unsplash.com',
-                'images.pexels.com',
-                'ui-avatars.com'
-              ];
-              
-              // If it's a trusted domain, use directly
-              if (trustedDomains.some(domain => urlObj.hostname.includes(domain))) {
-                return url;
-              }
-
-              // For other domains, try to use a placeholder image service
-              return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(url)}`;
-            } catch {
-              return defaultImage;
-            }
-          };
-
-          return {
-            id: post.id,
-            title: post.title || 'Untitled',
-            content: post.excerpt || "",
-            author: {
-              name: post.author?.name || "Anonymous",
-              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.id}`
-            },
-            category: post.category || category,
-            timestamp: post.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-            imageUrl: cleanImageUrl(post.imageUrl),
-            format: "hourglass" as const,
-            lead: post.excerpt ? `${post.excerpt.slice(0, 100)}...` : "",
-            body: post.content || "",
-            tail: "Read more..."
-          };
-        });
+        const items: FeedItem[] = posts.map((post: any) => ({
+          id: post.id,
+          title: post.title || 'Untitled',
+          content: post.excerpt || "",
+          author: {
+            name: post.author?.name || "Anonymous",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.id}`
+          },
+          category: post.category || category,
+          timestamp: post.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          imageUrl: post.imageUrl || '/images/default-article.jpg',
+          format: "hourglass" as const,
+          lead: post.excerpt ? `${post.excerpt.slice(0, 100)}...` : "",
+          body: post.content || "",
+          tail: "Read more..."
+        }));
 
         if (isMounted) {
           setFeedItems(items);
@@ -296,7 +245,7 @@ export function CategoryFeed({ category }: CategoryFeedProps) {
     return () => {
       isMounted = false;
     };
-  }, [category, mounted]);
+  }, [category, mounted, postsQuery]);
 
   if (!mounted) {
     return (

@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import defaultImage from '../assets/default-news.jpg'; // Add a default image
+import Image from 'next/image';
+
+const defaultImage = '/images/default-news.jpg';
 
 const NewsCard = ({ item }) => {
   const [imageError, setImageError] = useState(false);

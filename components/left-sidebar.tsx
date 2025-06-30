@@ -1,292 +1,214 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  Home,
-  Newspaper,
-  TrendingUp,
-  ListFilter,
-  Star,
-  Settings,
-  HelpCircle,
-  LogOut,
-  User,
-  UserPlus,
-  Menu,
-  Briefcase,
-  BookOpenIcon,
-  Library
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useState, useEffect, useCallback, memo, useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
+import { useSidebar } from "@/lib/sidebar-context"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { auth } from "@/lib/firebase"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { 
+  Home, 
+  TrendingUp, 
+  Bookmark, 
+  Settings, 
+  HelpCircle, 
+  User, 
+  Bell,
+  Search,
+  Menu,
+  X,
+  ChevronRight,
+  Zap,
+  Clock,
+  Hash
+} from "lucide-react"
 // Firebase removed - using mock auth
+import { useAuth } from "@/lib/auth-context"
 
-const routes = [
-  {
-    label: 'Home',
-    icon: Home,
-    href: '/',
-    color: "text-orange-500",
-    description: "Your personalized feed"
-  },
-  {
-    label: 'Articles',
-    icon: Newspaper,
-    href: '/articles',
-    color: "text-orange-600",
-    description: "Latest articles and news"
-  },
-  {
-    label: 'Jobs',
-    icon: Briefcase,
-    color: "text-orange-700",
-    href: '/jobs',
-    description: "Career opportunities"
-  },
-  {
-    label: 'Categories',
-    icon: ListFilter,
-    color: "text-orange-600",
-    href: '/categories',
-    description: "Browse by topics"
-  },
-  {
-    label: 'Trending',
-    icon: TrendingUp,
-    color: "text-orange-500",
-    href: '/trending',
-    description: "Most popular now"
-  },
-  {
-    label: 'Best of Week',
-    icon: Star,
-    color: "text-yellow-500",
-    href: '/best-of-week',
-    description: "Weekly highlights"
-  },
-  {
-    label: 'My Library',
-    icon: Library,
-    color: "text-orange-400",
-    href: '/library',
-    description: "Saved content"
-  }
-] as const;
-
-// Bottom items for signed-in users
-const signedInItems = [
-  { name: "Profile", icon: User, href: "/profile", description: " " },
-  { name: "Website Info", icon: Settings, href: "/website-info", description: " " },
-] as const;
-
-// Bottom items for non-signed-in users
-const signedOutItems = [
-  { name: "Website Info", icon: Settings, href: "/website-info", description: "About OminiSphere" },
-] as const;
-
-// Memoized navigation button component
-const NavButton = memo(({ 
-  href, 
-  icon: Icon, 
-  label, 
-  color, 
-  description,
-  isActive 
-}: { 
-  href: string
-  icon: any
+interface SidebarItemProps {
+  icon: React.ElementType
   label: string
-  color: string
-  description: string
-  isActive: boolean 
-}) => (
-  <Button
-    variant={isActive ? "secondary" : "ghost"}
-    className={cn(
-      "w-full justify-start gap-2 pl-2 relative group h-auto py-2",
-      isActive && "bg-orange-50 dark:bg-orange-950/50 text-orange-600"
-    )}
-    asChild
-  >
-    <Link href={href}>
-      <div className="flex items-center gap-2">
-        <Icon className={cn("h-4 w-4", color)} />
-        <div className="flex flex-col items-start gap-0">
-          <span className="font-medium leading-none">{label}</span>
-          <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors mt-0.5">
-            {description}
-          </span>
-        </div>
-      </div>
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-orange-500 rounded-r-full" />
+  href: string
+  badge?: string | number
+  isActive?: boolean
+  onClick?: () => void
+}
+
+function SidebarItem({ icon: Icon, label, href, badge, isActive, onClick }: SidebarItemProps) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground",
+        isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="flex-1">{label}</span>
+      {badge && (
+        <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-xs">
+          {badge}
+        </Badge>
       )}
     </Link>
-  </Button>
-));
-
-NavButton.displayName = 'NavButton';
-
-// Memoize the entire LeftSidebar component
-export const LeftSidebar = memo(function LeftSidebar() {
-  const pathname = usePathname()
-  const [isSignedIn, setIsSignedIn] = useState(false)
-  const [userName, setUserName] = useState("")
-  const router = useRouter()
-  const { isLeftSidebarOpen, toggleLeftSidebar } = useSidebar()
-  const [isTransitioning, setIsTransitioning] = useState(false)
-
-  // Memoize routes to prevent unnecessary re-renders
-  const memoizedRoutes = useMemo(() => routes, [])
-  const memoizedBottomItems = useMemo(() => 
-    isSignedIn ? signedInItems : signedOutItems, 
-    [isSignedIn]
   )
+}
+
+const mainNavigation = [
+  { icon: Home, label: "Home", href: "/" },
+  { icon: TrendingUp, label: "Trending", href: "/trending" },
+  { icon: Clock, label: "Recent", href: "/recent" },
+  { icon: Bookmark, label: "Saved", href: "/saved" },
+]
+
+const categories = [
+  { icon: Zap, label: "Technology", href: "/category/technology", badge: "128" },
+  { icon: Hash, label: "Business", href: "/category/business", badge: "89" },
+  { icon: Hash, label: "Science", href: "/category/science", badge: "67" },
+  { icon: Hash, label: "World", href: "/category/world", badge: "156" },
+  { icon: Hash, label: "Sports", href: "/category/sports", badge: "43" },
+]
+
+const bottomNavigation = [
+  { icon: User, label: "Profile", href: "/profile" },
+  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: HelpCircle, label: "Help", href: "/help" },
+]
+
+export function LeftSidebar() {
+  const pathname = usePathname()
+  const { user } = useAuth()
+  const [mounted, setMounted] = useState(false)
+  const { isLeftSidebarOpen, toggleLeftSidebar } = useSidebar()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsSignedIn(!!user)
-      if (user?.displayName || user?.email) {
-        setUserName(user.displayName || user.email.split('@')[0] || "")
-      }
-    });
-
-    return () => unsubscribe()
+    setMounted(true)
   }, [])
 
-  // Handle transition state
-  useEffect(() => {
-    if (isLeftSidebarOpen !== undefined) {
-      setIsTransitioning(true)
-      const timer = setTimeout(() => {
-        setIsTransitioning(false)
-      }, 200) // Match the transition duration
-      return () => clearTimeout(timer)
-    }
-  }, [isLeftSidebarOpen])
+  // Show mock user for demonstration
+  const currentUser = user || {
+    uid: 'demo-user',
+    email: 'demo@example.com',
+    displayName: 'Demo User'
+  }
 
-  const handleSignOut = useCallback(async () => {
-    try {
-      await auth.signOut()
-      router.push("/")
-    } catch (error) {
-      console.error("Error signing out:", error)
-    }
-  }, [router])
+  if (!mounted) {
+    return (
+      <aside className="fixed left-0 top-14 z-30 h-[calc(100vh-3.5rem)] w-64 border-r bg-background">
+        <div className="flex h-full animate-pulse flex-col">
+          <div className="h-16 bg-muted"></div>
+        </div>
+      </aside>
+    )
+  }
 
   return (
     <>
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-[240px] bg-background border-r transform transition-transform duration-200 ease-in-out will-change-transform",
-        isLeftSidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "md:translate-x-0",
-        isTransitioning ? "pointer-events-none" : "pointer-events-auto"
-      )}>
-        <div className="flex flex-col h-full">
+      {/* Mobile overlay */}
+      {isLeftSidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          onClick={toggleLeftSidebar}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed left-0 top-14 z-30 h-[calc(100vh-3.5rem)] w-64 transform border-r bg-background transition-transform duration-200 ease-in-out",
+          isLeftSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
+        <div className="flex h-full flex-col">
+          {/* User section */}
           <div className="p-4">
-            <div className="font-bold text-2xl tracking-tight mb-2">
-              <span className="text-orange-500">Omini</span>
-              <span>Sphere</span>
-              <span className="text-orange-500">.</span>
-            </div>
-          </div>
-
-          <div className="flex-1 px-4">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                {memoizedRoutes.map((route) => (
-                  <NavButton
-                    key={route.href}
-                    href={route.href}
-                    icon={route.icon}
-                    label={route.label}
-                    color={route.color}
-                    description={route.description}
-                    isActive={pathname === route.href}
-                  />
-                ))}
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.uid}`} />
+                <AvatarFallback>
+                  {currentUser.displayName?.[0] || currentUser.email?.[0] || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 overflow-hidden">
+                <p className="truncate text-sm font-medium">
+                  {currentUser.displayName || 'Anonymous User'}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {currentUser.email || 'No email'}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 mt-auto">
-            <Separator className="mb-4" />
-            {memoizedBottomItems.map((item) => (
-              <Button
-                key={item.name}
-                variant="ghost"
-                className="w-full justify-start mb-1 relative group"
-                asChild
-              >
-                <Link href={item.href}>
-                  <item.icon className="mr-2 h-4 w-4" />
-                  <div className="flex flex-col items-start">
-                    <span>{item.name}</span>
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground">
-                      {item.description}
-                    </span>
-                  </div>
-                </Link>
-              </Button>
-            ))}
+          <ScrollArea className="flex-1 px-4">
+            <div className="space-y-6">
+              {/* Main Navigation */}
+              <div>
+                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Navigation
+                </h3>
+                <nav className="space-y-1">
+                  {mainNavigation.map((item) => (
+                    <SidebarItem
+                      key={item.href}
+                      {...item}
+                      isActive={pathname === item.href}
+                    />
+                  ))}
+                </nav>
+              </div>
 
-            {isSignedIn ? (
-              <>
-                <Separator className="my-4" />
-                <div className="flex items-center justify-between mb-4 px-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                      <span className="text-sm font-medium text-orange-600">
-                        {userName[0]?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{userName}</span>
-                      <span className="text-xs text-muted-foreground">Signed in</span>
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                asChild
-              >
-                <Link href="/sign-up">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Sign Up
-                </Link>
-              </Button>
-            )}
+              <Separator />
+
+              {/* Categories */}
+              <div>
+                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Categories
+                </h3>
+                <nav className="space-y-1">
+                  {categories.map((item) => (
+                    <SidebarItem
+                      key={item.href}
+                      {...item}
+                      isActive={pathname === item.href}
+                    />
+                  ))}
+                </nav>
+              </div>
+
+              <Separator />
+
+              {/* Bottom Navigation */}
+              <div>
+                <nav className="space-y-1">
+                  {bottomNavigation.map((item) => (
+                    <SidebarItem
+                      key={item.href}
+                      {...item}
+                      isActive={pathname === item.href}
+                    />
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="p-4">
+            <div className="rounded-lg bg-muted/50 p-3 text-center">
+              <p className="text-xs text-muted-foreground">
+                OmniSphere v1.0
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Toggle Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-3 left-2 z-50 md:hidden h-8 w-8 p-0"
-        onClick={toggleLeftSidebar}
-      >
-        <Menu className="h-4 w-4" />
-      </Button>
+      </aside>
     </>
   )
-})
+}
 

@@ -1,68 +1,64 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
-// Firebase removed - using mock auth
-import { auth } from "@/lib/firebase"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
-export function AuthForm() {
-  const [isSignUp, setIsSignUp] = useState(false)
+interface AuthFormProps {
+  mode: "sign-in" | "sign-up"
+}
+
+export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { user } = useAuth()
+  const { signIn, signUp } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError("")
 
     try {
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password)
+      if (mode === "sign-up") {
+        await signUp(email, password)
       } else {
-        await signInWithEmailAndPassword(auth, email, password)
+        await signIn(email, password)
       }
       router.push("/")
-      router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (error: any) {
+      setError(error.message || "An error occurred")
+    } finally {
+      setLoading(false)
     }
   }
 
-  if (user) {
-    router.push("/")
-    return null
-  }
-
   return (
-    <Card className="w-[350px] mx-auto mt-8">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>{isSignUp ? "Create Account" : "Sign In"}</CardTitle>
-        <CardDescription>
-          {isSignUp
-            ? "Enter your email below to create your account"
-            : "Enter your email below to sign in to your account"}
-        </CardDescription>
+        <CardTitle>
+          {mode === "sign-up" ? "Create Account" : "Sign In"}
+        </CardTitle>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="m@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -73,22 +69,18 @@ export function AuthForm() {
               required
             />
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full">
-            {isSignUp ? "Sign Up" : "Sign In"}
+
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Processing..." : mode === "sign-up" ? "Sign Up" : "Sign In"}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-          </Button>
-        </CardFooter>
-      </form>
+        </form>
+      </CardContent>
     </Card>
   )
 } 

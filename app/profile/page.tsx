@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEffect, useState } from "react"
 import { Edit2, Save, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { updateProfile } from "firebase/auth"
+// Firebase removed - using mock auth
 import { useRouter } from "next/navigation"
 import { PageContainer } from "@/components/layout/page-container"
 

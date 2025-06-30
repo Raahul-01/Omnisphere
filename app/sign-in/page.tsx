@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { signInWithEmailAndPassword } from "firebase/auth"
+// Firebase removed - using mock auth
 import { auth } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
 

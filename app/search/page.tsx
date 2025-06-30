@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react'
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { collection, query as firestoreQuery, where, orderBy, limit, getDocs, DocumentData, QueryDocumentSnapshot } from "firebase/firestore"
+// Firebase removed - using mock data
 import { db } from "@/lib/firebase"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

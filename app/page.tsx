@@ -2,7 +2,6 @@
 
 import { LeftSidebar } from "@/components/left-sidebar"
 import { useState, useEffect } from "react"
-import { ContentDisplay } from "@/components/content-display"
 import { CategoryTabs } from "@/components/category-tabs"
 import { HomeFeed } from "@/components/home-feed"
 import { PageContainer } from "@/components/layout/page-container"

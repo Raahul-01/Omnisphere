@@ -1,111 +1,57 @@
 import { Metadata } from "next"
-import { adminDb } from "@/lib/firebase-admin"
 import { ArticleFeed } from "@/components/article-feed"
-import { cache } from 'react'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { PageContainer } from "@/components/layout/page-container"
-import { CategoryFeed } from "@/components/category-feed"
-
-const PREDEFINED_CATEGORIES = [
-  "Global",
-  "Politics",
-  "Business",
-  "Entertainment",
-  "Sport",
-  "Technology",
-  "Health",
-  "Automotive",
-  "Travel",
-  "Food",
-  "Music",
-  "Gaming",
-  "Education",
-  "Science",
-  "Fashion",
-  "Finance",
-  "Real Estate"
-];
 
 interface Props {
-  params: {
-    slug: string
-  }
+  params: { slug: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const category = slug;
+  const categoryName = params.slug.charAt(0).toUpperCase() + params.slug.slice(1)
+  
   return {
-    title: `${category} Articles`,
-    description: `Browse all articles in ${category} category`,
-  };
+    title: `${categoryName} Articles`,
+    description: `Browse ${categoryName.toLowerCase()} articles`,
+  }
 }
 
-const getCategoryArticles = cache(async (categoryName: string) => {
-  try {
-    // Get all articles and filter by case-insensitive category
-    const articlesRef = adminDb.collection('generated_content');
-    const snapshot = await articlesRef
-      .orderBy('time', 'desc')  // Only order by time
-      .limit(100)
-      .get();
-
-    // Filter articles case-insensitively in memory
-    const articles = snapshot.docs
-      .filter(doc => {
-        const data = doc.data();
-        return data.category?.toLowerCase() === categoryName.toLowerCase();
-      })
-      .map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: data.original_headline || data.headline || "",
-          content: data.content || "",
-          author: {
-            name: data.user || "Anonymous",
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user || 'Anonymous')}&background=random`
-          },
-          category: data.category || categoryName,
-          timestamp: data.time || new Date().toISOString(),
-          image: data.image_url || "/placeholder.jpg",
-          tags: Array.isArray(data.tags) ? data.tags : [],
-        };
-      })
-      .slice(0, 50); // Limit after filtering
-
-    return articles;
-  } catch (error) {
-    console.error('Error fetching category articles:', error);
-    return [];
+// Mock articles data for category
+const getMockArticlesForCategory = (slug: string) => [
+  {
+    id: '1',
+    title: `Sample ${slug} Article`,
+    content: `This is a sample article about ${slug}.`,
+    author: {
+      name: 'Category Author',
+      avatar: 'https://ui-avatars.com/api/?name=Category&background=random&size=128'
+    },
+    category: slug,
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    tags: [slug]
   }
-});
+];
 
 export default async function CategoryPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug } = params
   
-  if (!slug) {
-    notFound();
+  // Basic validation
+  if (!slug || slug.length < 2) {
+    notFound()
   }
 
-  // Check if category exists in predefined list (case-insensitive)
-  const matchedCategory = PREDEFINED_CATEGORIES.find(
-    cat => cat.toLowerCase() === slug.toLowerCase()
-  );
-
-  if (!matchedCategory) {
-    notFound();
-  }
+  const articles = getMockArticlesForCategory(slug);
+  const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1)
 
   return (
-    <main className="flex flex-col min-h-screen">
-      <div className="flex-1 md:ml-[240px] p-4">
-        <div className="max-w-[700px] mx-auto">
-          <h1 className="text-xl font-bold py-3">{matchedCategory} Articles</h1>
-          <CategoryFeed category={matchedCategory} />
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="text-center mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">{categoryName} Articles</h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Explore the latest in {categoryName.toLowerCase()}
+        </p>
       </div>
-    </main>
-  );
+      <ArticleFeed articles={articles} />
+    </div>
+  )
 } 

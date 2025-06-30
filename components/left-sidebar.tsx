@@ -25,7 +25,7 @@ import { useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { auth } from "@/lib/firebase"
-import { onAuthStateChanged } from "firebase/auth"
+// Firebase removed - using mock auth
 
 const routes = [
   {

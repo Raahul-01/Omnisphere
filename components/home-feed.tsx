@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useEffect, useState, useRef, useCallback } from "react"
-import { collection, query, orderBy, limit, getDocs, startAfter, where, DocumentData } from "firebase/firestore"
+// Firebase removed - using mock data
 import { db } from "@/lib/firebase"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

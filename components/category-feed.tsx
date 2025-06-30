@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { db } from "@/lib/firebase"
-import { collection, query, where, orderBy, limit, getDocs, DocumentData } from "firebase/firestore"
+// Firebase removed - using mock data
 
 interface CategoryFeedProps {
   category: string

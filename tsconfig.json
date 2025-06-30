@@ -16,12 +16,13 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./*"],
       "@/components/*": ["./components/*"],
-      "@/lib/*": ["./src/lib/*"],
+      "@/lib/*": ["./lib/*"],
       "@/types/*": ["./types/*"],
       "@/services/*": ["./services/*"],
-      "@/config/*": ["./src/config/*"]
+      "@/config/*": ["./config/*"],
+      "@/hooks/*": ["./hooks/*"]
     },
     "plugins": [
       {
@@ -30,5 +31,5 @@
     ]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "src"]
 }

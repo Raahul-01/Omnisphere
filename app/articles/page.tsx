@@ -1,7 +1,5 @@
 import { Metadata } from "next"
-import { adminDb } from "@/lib/firebase-admin"
 import { ArticleFeed } from "@/components/article-feed"
-import { cache } from 'react'
 import { PageContainer } from "@/components/layout/page-container"
 
 export const metadata: Metadata = {
@@ -9,57 +7,24 @@ export const metadata: Metadata = {
   description: "Browse all articles",
 }
 
-// Cache the data fetching
-const getArticles = cache(async () => {
-  try {
-    // First try to get articles with features.articles = true
-    const articlesRef = adminDb.collection('generated_content');
-    
-    // First get all documents and filter for articles feature
-    const querySnapshot = await articlesRef
-      .orderBy('time', 'desc')
-      .limit(100)
-      .get();
-
-    console.log('Fetching articles...');
-
-    // Filter documents that have features.articles = true
-    const articles = querySnapshot.docs
-      .filter(doc => {
-        const data = doc.data();
-        return data.features?.articles === true;
-      })
-      .map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: data.original_headline || data.headline || "",
-          content: data.content || "",
-          author: {
-            name: data.user || "Anonymous",
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user || 'Anonymous')}&background=random&size=128`
-          },
-          category: data.category || "General",
-          timestamp: data.time || new Date().toISOString(),
-          image: data.image_url || "/placeholder.jpg",
-          tags: Array.isArray(data.tags) ? data.tags : [],
-        };
-      })
-      .slice(0, 50); // Limit to 50 articles after filtering
-
-    console.log(`Found ${articles.length} articles with articles feature`);
-    return articles;
-
-  } catch (error) {
-    console.error('Error fetching articles:', error);
-    console.error('Error details:', error instanceof Error ? error.message : error);
-    return [];
+// Mock articles data for now
+const mockArticles = [
+  {
+    id: '1',
+    title: 'Welcome to Omnisphere',
+    content: 'This is a sample article to demonstrate the platform.',
+    author: {
+      name: 'Admin',
+      avatar: 'https://ui-avatars.com/api/?name=Admin&background=random&size=128'
+    },
+    category: 'Technology',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    tags: ['tech', 'platform']
   }
-});
+];
 
 export default async function ArticlesPage() {
-  const articles = await getArticles();
-
   return (
     <PageContainer>
       <div className="text-center mb-12">
@@ -68,7 +33,7 @@ export default async function ArticlesPage() {
           Discover interesting stories and insights
         </p>
       </div>
-      <ArticleFeed articles={articles} />
+      <ArticleFeed articles={mockArticles} />
     </PageContainer>
   );
 } 

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/src/lib/auth-context"
+import { useAuth } from "@/lib/auth-context"
 import { AuthForm } from "@/components/auth/auth-form"
 
 export default function AuthPage() {

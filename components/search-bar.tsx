@@ -5,7 +5,7 @@ import { Search, X, Loader2, TrendingUp } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { adminDb } from "@/lib/firebase-admin"
+import { db } from "@/lib/firebase"
 import { Badge } from "@/components/ui/badge"
 
 interface SearchSuggestion {

@@ -1,13 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { History, Bookmark } from "lucide-react"
 import { ArticleFeed } from "@/components/article-feed"
-import { db } from "@/lib/firebase"
-import { collection, query as firestoreQuery, where, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore"
-import { auth } from "@/lib/firebase"
-import { onAuthStateChanged, User } from "firebase/auth"
 import { PageContainer } from "@/components/layout/page-container"
 
 interface Article {
@@ -24,111 +20,41 @@ interface Article {
   tags: string[];
 }
 
-export default function LibraryPage() {
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-  const [historyArticles, setHistoryArticles] = useState<Article[]>([]);
-  const [bookmarkedArticles, setBookmarkedArticles] = useState<Article[]>([]);
-  const [activeTab, setActiveTab] = useState("history");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    async function fetchUserLibrary() {
-      if (!user) {
-        setHistoryArticles([]);
-        setBookmarkedArticles([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Fetch history
-        const historyRef = collection(db, 'users', user.uid, 'history');
-        const historyQuery = query(historyRef, orderBy('viewedAt', 'desc'));
-        const historySnapshot = await getDocs(historyQuery);
-        
-        const historyDocs = await Promise.all(
-          historySnapshot.docs.map(async (doc) => {
-            const articleRef = doc(db, 'generated_content', doc.data().articleId);
-            const articleSnap = await getDoc(articleRef);
-            const articleData = articleSnap.data();
-            if (!articleData) return null;
-            
-            return {
-              id: articleSnap.id,
-              title: articleData.original_headline || articleData.headline || "",
-              content: articleData.content || "",
-              author: {
-                name: articleData.user || "Anonymous",
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(articleData.user || 'Anonymous')}&background=random&size=128`
-              },
-              category: articleData.category || "General",
-              timestamp: articleData.time || new Date().toISOString(),
-              image: articleData.image_url || "/placeholder.jpg",
-              tags: Array.isArray(articleData.tags) ? articleData.tags : [],
-            };
-          })
-        );
-
-        // Fetch bookmarks
-        const bookmarksRef = collection(db, 'users', user.uid, 'bookmarks');
-        const bookmarksQuery = query(bookmarksRef, orderBy('savedAt', 'desc'));
-        const bookmarksSnapshot = await getDocs(bookmarksQuery);
-        
-        const bookmarkDocs = await Promise.all(
-          bookmarksSnapshot.docs.map(async (doc) => {
-            const articleRef = doc(db, 'generated_content', doc.data().articleId);
-            const articleSnap = await getDoc(articleRef);
-            const articleData = articleSnap.data();
-            if (!articleData) return null;
-            
-            return {
-              id: articleSnap.id,
-              title: articleData.original_headline || articleData.headline || "",
-              content: articleData.content || "",
-              author: {
-                name: articleData.user || "Anonymous",
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(articleData.user || 'Anonymous')}&background=random&size=128`
-              },
-              category: articleData.category || "General",
-              timestamp: articleData.time || new Date().toISOString(),
-              image: articleData.image_url || "/placeholder.jpg",
-              tags: Array.isArray(articleData.tags) ? articleData.tags : [],
-            };
-          })
-        );
-
-        setHistoryArticles(historyDocs.filter(Boolean) as Article[]);
-        setBookmarkedArticles(bookmarkDocs.filter(Boolean) as Article[]);
-      } catch (error) {
-        console.error('Error fetching library:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUserLibrary();
-  }, [user]);
-
-  if (!user) {
-    return (
-      <PageContainer>
-        <div className="max-w-[1200px] mx-auto text-center py-8">
-          <h2 className="text-2xl font-bold mb-2">Sign in Required</h2>
-          <p className="text-muted-foreground mb-6">
-            Please sign in to view your history and bookmarks.
-          </p>
-        </div>
-      </PageContainer>
-    );
+// Mock data for demonstration
+const mockHistoryArticles: Article[] = [
+  {
+    id: '1',
+    title: 'Recently Read Article',
+    content: 'This is an article you recently viewed.',
+    author: {
+      name: 'John Doe',
+      avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=random&size=128'
+    },
+    category: 'Technology',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    tags: ['tech', 'recent']
   }
+];
+
+const mockBookmarkedArticles: Article[] = [
+  {
+    id: '2',
+    title: 'Bookmarked Article',
+    content: 'This is an article you bookmarked for later reading.',
+    author: {
+      name: 'Jane Smith',
+      avatar: 'https://ui-avatars.com/api/?name=Jane+Smith&background=random&size=128'
+    },
+    category: 'Business',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    tags: ['business', 'saved']
+  }
+];
+
+export default function LibraryPage() {
+  const [activeTab, setActiveTab] = useState("history");
 
   return (
     <PageContainer>
@@ -149,10 +75,8 @@ export default function LibraryPage() {
           </div>
 
           <TabsContent value="history">
-            {loading ? (
-              <div className="text-center py-12">Loading history...</div>
-            ) : historyArticles.length > 0 ? (
-              <ArticleFeed articles={historyArticles} />
+            {mockHistoryArticles.length > 0 ? (
+              <ArticleFeed articles={mockHistoryArticles} />
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No reading history yet.</p>
@@ -161,10 +85,8 @@ export default function LibraryPage() {
           </TabsContent>
 
           <TabsContent value="bookmarks">
-            {loading ? (
-              <div className="text-center py-12">Loading bookmarks...</div>
-            ) : bookmarkedArticles.length > 0 ? (
-              <ArticleFeed articles={bookmarkedArticles} />
+            {mockBookmarkedArticles.length > 0 ? (
+              <ArticleFeed articles={mockBookmarkedArticles} />
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No bookmarks yet.</p>

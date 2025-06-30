@@ -1,137 +1,79 @@
 "use client"
 
-import React, { useEffect, useState, useMemo } from 'react'
-import { Article } from "@/types/article"
-import { getArticlesByCategory } from "@/services/articles"
-import { isFeatureEnabled } from '@/config/features'
-import { useRouter } from 'next/navigation'
+import React from 'react'
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, BookmarkPlus, TrendingUp, Crown, Star, ArrowRight, BookOpen, LineChart } from "lucide-react"
+import { Clock } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { db } from "@/lib/firebase"
-// Firebase removed - using mock data
+
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  author: {
+    name: string;
+    avatar: string;
+  };
+  category: string;
+  timestamp: string;
+  image: string;
+}
+
+// Mock articles for category
+const mockCategoryArticles: Article[] = [
+  {
+    id: '1',
+    title: 'Latest Technology News and Updates',
+    content: 'Stay informed with the latest developments in technology, including breakthroughs in AI, quantum computing, and more.',
+    author: {
+      name: 'Tech Reporter',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=tech'
+    },
+    category: 'Technology',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg'
+  },
+  {
+    id: '2',
+    title: 'Business Market Analysis for 2024',
+    content: 'Comprehensive analysis of current market trends and future predictions for the business sector.',
+    author: {
+      name: 'Business Analyst',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=business'
+    },
+    category: 'Business',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    image: '/placeholder.jpg'
+  }
+];
 
 interface CategoryFeedProps {
-  category: string
+  category?: string;
 }
 
-interface FeedItem {
-  id: string
-  title: string
-  content: string
-  author: {
-    name: string
-    avatar: string
-  }
-  category: string
-  timestamp: string
-  imageUrl: string
-  format: string
-  lead: string
-  body: string
-  tail: string
-}
+export function CategoryFeed({ category = 'All' }: CategoryFeedProps) {
+  const [articles] = useState<Article[]>(mockCategoryArticles)
 
-// Create a client-only component for dynamic content
-const DynamicContent = ({ article }: { article: Article }) => {
-  const [mounted, setMounted] = useState(false)
-  const [formattedDate, setFormattedDate] = useState('')
-
-  useEffect(() => {
-    setMounted(true)
-    if (article.timestamp) {
-      const date = new Date(article.timestamp)
-      setFormattedDate(formatDistanceToNow(date, { addSuffix: true }))
-    }
-  }, [article.timestamp])
-
-  if (!mounted) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-        <div className="h-3 bg-muted rounded w-1/2"></div>
-      </div>
-    )
-  }
-
-  return (
-    <>
-      <p className="text-xs text-muted-foreground">
-        {formattedDate || 'Just now'}
-      </p>
-      <span>{Math.ceil((article.content?.length || 0) / 1000)} min</span>
-    </>
-  )
-}
-
-// ArticleCard component
-const ArticleCard = ({ article }: { article: Article }) => {
-  const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const defaultImage = '/images/default-article.jpg';
-  
-  // Memoize the image URL calculation
-  const imageUrl = useMemo(() => {
-    if (!article.imageUrl) return defaultImage;
-    try {
-      const urlObj = new URL(article.imageUrl);
-      const blockedDomains = [
-        'lookaside.fbsbx.com',
-        'lookaside.instagram.com',
-        'facebook.com',
-        'fb.com'
-      ];
-      
-      if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
-        return defaultImage;
-      }
-
-      const trustedDomains = [
-        'firebasestorage.googleapis.com',
-        'api.dicebear.com',
-        'picsum.photos',
-        'upload.wikimedia.org',
-        'electrek.co',
-        'assets.nintendo.com',
-        'images.unsplash.com',
-        'images.pexels.com',
-        'ui-avatars.com'
-      ];
-      
-      return trustedDomains.some(domain => urlObj.hostname.includes(domain))
-        ? article.imageUrl
-        : defaultImage;
-    } catch {
-      return defaultImage;
-    }
-  }, [article.imageUrl]);
-
-  return (
-    <Link href={`/article/${article.id}`} className="group" prefetch={false}>
+  const ArticleCard = ({ article }: { article: Article }) => (
+    <Link 
+      href={`/article/${article.id}`}
+      className="group"
+    >
       <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300">
         <div className="relative h-52 overflow-hidden">
-          <div className={`absolute inset-0 bg-gray-200 animate-pulse ${!isLoading && 'hidden'}`} />
           <Image
-            src={imageError ? defaultImage : imageUrl}
-            alt={article.title || 'Article image'}
+            src={article.image}
+            alt={article.title}
             fill
-            className={`object-cover transform group-hover:scale-105 transition-transform duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-            onError={() => setImageError(true)}
-            onLoad={() => setIsLoading(false)}
-            priority={false}
-            unoptimized={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="lazy"
+            className="object-cover transform group-hover:scale-105 transition-transform duration-300"
           />
           <Badge 
             variant="secondary" 
-            className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 z-10"
+            className="absolute top-4 left-4 bg-white/90 dark:bg-black/50"
           >
             {article.category}
           </Badge>
@@ -143,155 +85,52 @@ const ArticleCard = ({ article }: { article: Article }) => {
           </h3>
 
           <p className="text-muted-foreground line-clamp-2">
-            {article.content?.slice(0, 120) || 'No content available'}...
+            {article.content.slice(0, 120)}...
           </p>
 
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={article.author?.avatar || ''} />
-                <AvatarFallback>{article.author?.name?.[0] || '?'}</AvatarFallback>
+                <AvatarImage src={article.author.avatar} />
+                <AvatarFallback>{article.author.name[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium text-sm">{article.author?.name || 'Anonymous'}</p>
-                <DynamicContent article={article} />
+                <p className="font-medium text-sm">{article.author.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(article.timestamp), { addSuffix: true })}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-4 w-4" />
-              <DynamicContent article={article} />
+              <span>{Math.ceil(article.content.length / 1000)} min</span>
             </div>
           </div>
         </div>
       </Card>
     </Link>
-  );
-};
-
-export function CategoryFeed({ category }: CategoryFeedProps) {
-  const router = useRouter()
-  const [mounted, setMounted] = useState(false)
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Memoize the query
-  const postsQuery = useMemo(() => {
-    const postsRef = collection(db, 'posts');
-    return query(
-      postsRef,
-      where('categories', 'array-contains', category),
-      orderBy('createdAt', 'desc'),
-      limit(12) // Limit initial load
-    );
-  }, [category]);
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    let isMounted = true;
-
-    async function loadArticles() {
-      try {
-        setIsLoading(true);
-        const querySnapshot = await getDocs(postsQuery);
-        
-        if (!isMounted) return;
-
-        const posts = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        const items: FeedItem[] = posts.map((post: any) => ({
-          id: post.id,
-          title: post.title || 'Untitled',
-          content: post.excerpt || "",
-          author: {
-            name: post.author?.name || "Anonymous",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.id}`
-          },
-          category: post.category || category,
-          timestamp: post.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-          imageUrl: post.imageUrl || '/images/default-article.jpg',
-          format: "hourglass" as const,
-          lead: post.excerpt ? `${post.excerpt.slice(0, 100)}...` : "",
-          body: post.content || "",
-          tail: "Read more..."
-        }));
-
-        if (isMounted) {
-          setFeedItems(items);
-          setError(null);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setError('Failed to load articles');
-          console.error('Error loading articles:', error);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadArticles();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [category, mounted, postsQuery]);
-
-  if (!mounted) {
-    return (
-      <div className="p-4 text-center animate-pulse">
-        <div className="h-4 bg-muted rounded w-3/4 mx-auto mb-4"></div>
-        <div className="h-4 bg-muted rounded w-1/2 mx-auto"></div>
-      </div>
-    )
-  }
-
-  if (!isFeatureEnabled('Categories')) {
-    router.push('/')
-    return null
-  }
-
-  if (isLoading) {
-    return (
-      <div className="p-4 text-center">
-        <p>Loading articles...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 text-center text-red-500">
-        <p>{error}</p>
-      </div>
-    )
-  }
-
-  if (feedItems.length === 0) {
-    return (
-      <div className="p-4 text-center">
-        <p>No articles found in {category} category.</p>
-      </div>
-    )
-  }
+  )
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {feedItems.map((item) => (
-        <ArticleCard key={item.id} article={item} />
-      ))}
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">
+          {category === 'All' ? 'All Articles' : `${category} Articles`}
+        </h2>
+        <p className="text-muted-foreground">Explore articles in this category</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((article) => (
+          <ArticleCard key={article.id} article={article} />
+        ))}
+      </div>
+
+      <div className="text-center pt-8">
+        <p className="text-muted-foreground">
+          More {category.toLowerCase()} articles coming soon!
+        </p>
+      </div>
     </div>
   )
-}
-
-export default CategoryFeed 
+} 

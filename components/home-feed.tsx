@@ -1,20 +1,16 @@
 "use client"
 
 import React from 'react'
-import { useEffect, useState, useRef, useCallback } from "react"
-// Firebase removed - using mock data
-import { db } from "@/lib/firebase"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, BookmarkPlus, TrendingUp, Crown, Star, ArrowRight, BookOpen, LineChart } from "lucide-react"
+import { Clock, TrendingUp, Crown, Star } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 
-interface Article extends DocumentData {
+interface Article {
   id: string;
   title: string;
   content: string;
@@ -28,33 +24,81 @@ interface Article extends DocumentData {
   features?: {
     best_of_week?: boolean;
     trending?: boolean;
+    editor_picks?: boolean;
   };
 }
 
-interface FeaturedSection {
-  title: string;
-  articles: Article[];
-  type: 'best-of-week' | 'trending' | 'editor-picks';
-  icon: React.ElementType;
-  color: string;
-}
-
-interface CategoryStats {
-  name: string;
-  count: number;
-  color: string;
-}
+// Mock articles data
+const mockArticles: Article[] = [
+  {
+    id: '1',
+    title: 'Breaking: Major Technology Breakthrough Announced',
+    content: 'Scientists have announced a revolutionary breakthrough in quantum computing that could change the world as we know it. This development represents years of research and collaboration.',
+    author: {
+      name: 'Tech Reporter',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=tech'
+    },
+    category: 'Technology',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    features: { trending: true }
+  },
+  {
+    id: '2',
+    title: 'Global Climate Summit Reaches Historic Agreement',
+    content: 'World leaders have reached a groundbreaking agreement on climate action at the latest international summit. The agreement includes ambitious targets for carbon reduction.',
+    author: {
+      name: 'Environment Correspondent',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=environment'
+    },
+    category: 'World',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    image: '/placeholder.jpg',
+    features: { best_of_week: true }
+  },
+  {
+    id: '3',
+    title: 'New Economic Policies Show Promising Results',
+    content: 'Recent economic policies implemented by the government are showing positive results according to latest quarterly reports. Market analysts are optimistic.',
+    author: {
+      name: 'Business Analyst',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=business'
+    },
+    category: 'Business',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    image: '/placeholder.jpg',
+    features: { editor_picks: true }
+  },
+  {
+    id: '4',
+    title: 'Scientific Discovery Could Lead to New Medicine',
+    content: 'Researchers have made a significant discovery that could lead to breakthrough treatments for various diseases. Clinical trials are expected to begin next year.',
+    author: {
+      name: 'Science Writer',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=science'
+    },
+    category: 'Science',
+    timestamp: new Date(Date.now() - 10800000).toISOString(),
+    image: '/placeholder.jpg'
+  },
+  {
+    id: '5',
+    title: 'Sports Championship Delivers Thrilling Finale',
+    content: 'The annual championship concluded with an unexpected victory that has fans celebrating worldwide. The final match was described as one of the best in years.',
+    author: {
+      name: 'Sports Reporter',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sports'
+    },
+    category: 'Sports',
+    timestamp: new Date(Date.now() - 14400000).toISOString(),
+    image: '/placeholder.jpg'
+  }
+];
 
 export function HomeFeed() {
-  const [articles, setArticles] = useState<Article[]>([])
-  const [loading, setLoading] = useState(true)
-  const [hasMore, setHasMore] = useState(true)
-  const [lastDoc, setLastDoc] = useState<DocumentData | null>(null)
-  const [featuredSections, setFeaturedSections] = useState<FeaturedSection[]>([])
-  const [categories, setCategories] = useState<CategoryStats[]>([])
-  const observerTarget = useRef<HTMLDivElement>(null)
+  const [articles] = useState<Article[]>(mockArticles)
 
-  // ArticleCard component definition
+  // ArticleCard component
   const ArticleCard = ({ article }: { article: Article }) => (
     <Link 
       href={`/article/${article.id}`}
@@ -74,6 +118,33 @@ export function HomeFeed() {
           >
             {article.category}
           </Badge>
+          {article.features?.trending && (
+            <Badge 
+              variant="secondary" 
+              className="absolute top-4 right-4 bg-orange-500/90 text-white"
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Trending
+            </Badge>
+          )}
+          {article.features?.best_of_week && (
+            <Badge 
+              variant="secondary" 
+              className="absolute top-4 right-4 bg-yellow-500/90 text-white"
+            >
+              <Crown className="h-3 w-3 mr-1" />
+              Best of Week
+            </Badge>
+          )}
+          {article.features?.editor_picks && (
+            <Badge 
+              variant="secondary" 
+              className="absolute top-4 right-4 bg-blue-500/90 text-white"
+            >
+              <Star className="h-3 w-3 mr-1" />
+              Editor's Pick
+            </Badge>
+          )}
         </div>
 
         <div className="p-5 space-y-4">
@@ -108,723 +179,24 @@ export function HomeFeed() {
     </Link>
   )
 
-  const fetchFeaturedSections = async () => {
-    try {
-      // Fetch Best of Week articles
-      const bestOfWeekQuery = query(
-        collection(db, 'generated_content'),
-        where('features.best_of_week', '==', true),
-        orderBy('time', 'desc'),
-        limit(6)
-      )
-      const bestOfWeekSnapshot = await getDocs(bestOfWeekQuery)
-      
-      // Fetch Trending articles - limit to 4
-      const trendingQuery = query(
-        collection(db, 'generated_content'),
-        where('features.trending', '==', true),
-        orderBy('time', 'desc'),
-        limit(4)
-      )
-      const trendingSnapshot = await getDocs(trendingQuery)
-
-      // Fetch Editor's Picks
-      const editorPicksQuery = query(
-        collection(db, 'generated_content'),
-        where('features.editor_picks', '==', true),
-        orderBy('time', 'desc'),
-        limit(6)
-      )
-      const editorPicksSnapshot = await getDocs(editorPicksQuery)
-
-      const sections: FeaturedSection[] = [
-        {
-          title: "Best of the Week",
-          articles: bestOfWeekSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...mapArticleData(doc.data())
-          })),
-          type: 'best-of-week',
-          icon: Crown,
-          color: 'text-yellow-500'
-        },
-        {
-          title: "Trending Now",
-          articles: trendingSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...mapArticleData(doc.data())
-          })),
-          type: 'trending',
-          icon: TrendingUp,
-          color: 'text-orange-500'
-        },
-        {
-          title: "Editor's Picks",
-          articles: editorPicksSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...mapArticleData(doc.data())
-          })),
-          type: 'editor-picks',
-          icon: Star,
-          color: 'text-blue-500'
-        }
-      ]
-
-      setFeaturedSections(sections)
-    } catch (error) {
-      console.error("Error fetching featured sections:", error)
-    }
-  }
-
-  const mapArticleData = (data: any) => ({
-    title: (data.original_headline || data.headline || "Untitled").replace(/\*\*|##/g, ''),
-    content: (data.content || "").replace(/\*\*|##/g, ''),
-            author: {
-              name: data.user || "Anonymous",
-              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user || 'anonymous'}`
-            },
-            category: data.category || "General",
-            timestamp: data.time || new Date().toISOString(),
-            image: data.image_url || "/placeholder.jpg",
-    features: data.features || {}
-  })
-
-  const fetchArticles = async (lastVisible?: any) => {
-    try {
-      const articlesRef = collection(db, 'generated_content')
-      let q = query(
-        articlesRef,
-        orderBy('time', 'desc'),
-        limit(15)
-      )
-
-      if (lastVisible) {
-        q = query(
-          articlesRef,
-          orderBy('time', 'desc'),
-          startAfter(lastVisible),
-          limit(15)
-        )
-      }
-      
-      const querySnapshot = await getDocs(q)
-      
-      if (querySnapshot.empty) {
-        setHasMore(false)
-        return
-      }
-
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1])
-      
-      const fetchedArticles = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...mapArticleData(doc.data())
-      }))
-
-      if (lastVisible) {
-        setArticles(prev => [...prev, ...fetchedArticles])
-      } else {
-        setArticles(fetchedArticles)
-      }
-      } catch (error) {
-        console.error("Error fetching articles:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-  // Intersection Observer callback
-  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const target = entries[0]
-    if (target.isIntersecting && hasMore && !loading) {
-      fetchArticles(lastDoc)
-    }
-  }, [hasMore, loading, lastDoc])
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, {
-      root: null,
-      rootMargin: '20px',
-      threshold: 1.0
-    })
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
-      }
-    }
-  }, [handleObserver])
-
-  const fetchCategoryStats = async () => {
-    try {
-      const categoriesRef = collection(db, 'generated_content')
-      const snapshot = await getDocs(categoriesRef)
-      
-      // Count articles per category
-      const categoryCount: { [key: string]: number } = {}
-      snapshot.docs.forEach(doc => {
-        const category = doc.data().category || 'Uncategorized'
-        categoryCount[category] = (categoryCount[category] || 0) + 1
-      })
-
-      // Define category colors
-      const categoryColors: { [key: string]: string } = {
-        'Technology': 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-        'Business': 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-        'Science': 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-        'World': 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-        'Entertainment': 'bg-pink-100 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
-        'Sports': 'bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
-        'Health': 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-        'Politics': 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400'
-      }
-
-      // Convert to array and sort by count
-      const categoryStats = Object.entries(categoryCount)
-        .map(([name, count]) => ({
-          name,
-          count,
-          color: categoryColors[name] || 'bg-gray-100 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400'
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8) // Get top 8 categories
-
-      setCategories(categoryStats)
-    } catch (error) {
-      console.error("Error fetching category stats:", error)
-    }
-  }
-
-  useEffect(() => {
-    fetchArticles()
-    fetchFeaturedSections()
-    fetchCategoryStats()
-  }, [])
-
-  const renderFeaturedSection = (section: FeaturedSection) => {
-    const Icon = section.icon
-    return (
-      <div key={section.type} className="my-12 relative">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${section.type === 'best-of-week' ? 'bg-yellow-100 dark:bg-yellow-900/20' : section.type === 'trending' ? 'bg-orange-100 dark:bg-orange-900/20' : 'bg-blue-100 dark:bg-blue-900/20'}`}>
-              <Icon className={`h-6 w-6 ${section.color}`} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">{section.title}</h2>
-              <p className="text-sm text-muted-foreground">
-                {section.type === 'best-of-week' ? 'Most impactful stories of the week' : section.type === 'trending' ? 'What everyone is reading' : 'Editor\'s picks'}
-              </p>
-            </div>
-          </div>
-          <Link href={`/${section.type}`}>
-            <Button variant="ghost" size="sm" className="gap-2">
-              View All
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-
-        {section.type === 'best-of-week' ? (
-          // Best of Week Layout - Horizontal Cards
-          <div className="grid grid-cols-1 gap-6">
-            {section.articles.map((article, index) => (
-              <Link 
-                key={article.id}
-                href={`/article/${article.id}`}
-                className="group"
-              >
-                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="flex flex-col md:flex-row h-full">
-                    <div className="relative w-full md:w-[300px] h-48 md:h-auto">
-                      <Image
-                        src={article.image}
-                        alt={article.title}
-                        fill
-                        className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <Badge 
-                        variant="secondary" 
-                        className="absolute top-4 left-4 bg-yellow-500/90 text-white"
-                      >
-                        #{index + 1} This Week
-                      </Badge>
-                    </div>
-                    <div className="flex-1 p-6 flex flex-col justify-between">
-                      <div className="space-y-4">
-                        <h3 className="text-xl font-bold line-clamp-2 group-hover:text-primary transition-colors">
-                          {article.title}
-                        </h3>
-                        <p className="text-muted-foreground line-clamp-2">
-                          {article.content.slice(0, 150)}...
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={article.author.avatar} />
-                            <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-sm">{article.author.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(article.timestamp), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant="secondary" className="ml-auto">
-                          {article.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : section.type === 'trending' ? (
-          // Trending Now Layout - Grid with Overlay
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {section.articles.map((article, index) => (
-              <Link 
-                key={article.id}
-                href={`/article/${article.id}`}
-                className="group"
-              >
-                <Card className="relative h-[400px] overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="absolute inset-0">
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                  </div>
-                  <div className="relative h-full p-6 flex flex-col justify-end text-white">
-                    <Badge 
-                      variant="secondary" 
-                      className="mb-4 bg-orange-500/90 text-white self-start"
-                    >
-                      Trending #{index + 1}
-                    </Badge>
-                    <h3 className="text-xl font-bold mb-3 line-clamp-3 group-hover:text-orange-400 transition-colors">
-                      {article.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-white/90">
-                      <Avatar className="h-6 w-6 ring-2 ring-orange-500/50">
-                        <AvatarImage src={article.author.avatar} />
-                        <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <p className="text-sm">{article.author.name}</p>
-                      <span className="text-xs">·</span>
-                      <p className="text-xs">
-                        {formatDistanceToNow(new Date(article.timestamp), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          // Editor's Picks Layout - Grid with Overlay
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {section.articles.map((article, index) => (
-              <Link 
-                key={article.id}
-                href={`/article/${article.id}`}
-                className="group"
-              >
-                <Card className="relative h-[400px] overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="absolute inset-0">
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                  </div>
-                  <div className="relative h-full p-6 flex flex-col justify-end text-white">
-                    <Badge 
-                      variant="secondary" 
-                      className="mb-4 bg-blue-500/90 text-white self-start"
-                    >
-                      Editor's Pick
-                    </Badge>
-                    <h3 className="text-xl font-bold mb-3 line-clamp-3 group-hover:text-blue-400 transition-colors">
-                      {article.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-white/90">
-                      <Avatar className="h-6 w-6 ring-2 ring-blue-500">
-                        <AvatarImage src={article.author.avatar} />
-                        <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <p className="text-sm">{article.author.name}</p>
-                      <span className="text-xs">·</span>
-                      <p className="text-xs">
-                        {formatDistanceToNow(new Date(article.timestamp), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Add this new section right after the featured sections render
-  const renderCategories = () => (
-    <div className="my-12">
-      <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {categories.map((category) => (
-          <Link 
-            key={category.name}
-            href={`/category/${category.name.toLowerCase()}`}
-            className="group"
-          >
-            <Card className="p-6 hover:shadow-lg transition-all duration-300">
-              <div className={`inline-flex items-center px-3 py-1 rounded-full ${category.color} mb-4`}>
-                <span className="text-sm font-medium">{category.name}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">{category.count}</span>
-                <span className="text-sm text-muted-foreground">stories</span>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderBestOfWeekFeed = () => (
-    <div className="my-12 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-yellow-500 shadow-lg shadow-yellow-500/20">
-            <Crown className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Best of the Week</h2>
-            <p className="text-sm text-muted-foreground">Curated excellence from our top stories</p>
-          </div>
-        </div>
-        <Link href="/best-of-week">
-          <Button variant="secondary" size="sm" className="gap-2 bg-white dark:bg-zinc-900 shadow-md">
-            View All Stories
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        {/* Main Featured Article */}
-        {featuredSections[0]?.articles[0] && (
-          <Link 
-            href={`/article/${featuredSections[0].articles[0].id}`}
-            className="col-span-12 lg:col-span-6 group"
-          >
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
-              <div className="relative h-[400px]">
-                <Image
-                  src={featuredSections[0].articles[0].image}
-                  alt={featuredSections[0].articles[0].title}
-                  fill
-                  className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <Badge 
-                    variant="secondary" 
-                    className="w-fit mb-4 bg-yellow-500 text-white"
-                  >
-                    #1 Story This Week
-                  </Badge>
-                  <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors line-clamp-2">
-                    {featuredSections[0].articles[0].title}
-                  </h3>
-                  <p className="text-white/80 line-clamp-2 mb-4">
-                    {featuredSections[0].articles[0].content.slice(0, 150)}...
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 ring-2 ring-yellow-500">
-                      <AvatarImage src={featuredSections[0].articles[0].author.avatar} />
-                      <AvatarFallback>{featuredSections[0].articles[0].author.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-white">
-                      <p className="text-sm font-medium">{featuredSections[0].articles[0].author.name}</p>
-                      <p className="text-xs text-white/70">
-                        {formatDistanceToNow(new Date(featuredSections[0].articles[0].timestamp), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        )}
-
-        {/* Secondary Articles */}
-        <div className="col-span-12 lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {featuredSections[0]?.articles.slice(1, 5).map((article, index) => (
-            <Link 
-              key={article.id}
-              href={`/article/${article.id}`}
-              className="group"
-            >
-              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full bg-white dark:bg-zinc-900">
-                <div className="relative h-32">
-                  <Image
-                    src={article.image}
-                    alt={article.title}
-                    fill
-                    className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute top-2 left-2 bg-yellow-500/90 text-white"
-                  >
-                    #{index + 2} This Week
-                  </Badge>
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="font-bold line-clamp-2 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors mb-2">
-                    {article.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-auto pt-3 border-t">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={article.author.avatar} />
-                      <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {article.author.name} · {formatDistanceToNow(new Date(article.timestamp), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-
-  if (loading && articles.length === 0) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <div className="h-48 bg-muted"></div>
-            <div className="p-4 space-y-4">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-4 bg-muted rounded w-1/2"></div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    )
-  }
-
-  // Separate first article for featured display
-  const [featuredArticle, ...restArticles] = articles
-
   return (
-    <div className="max-w-[1400px] mx-auto space-y-12 px-4 md:px-6">
-      {/* Featured Article */}
-      {featuredArticle && (
-        <section className="relative w-full">
-        <Link href={`/article/${featuredArticle.id}`}>
-            <Card className="group">
-              <div className="relative h-[400px] md:h-[600px] w-full overflow-hidden rounded-xl">
-              <Image
-                src={featuredArticle.image}
-                alt={featuredArticle.title}
-                fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                priority
-              />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                
-                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
-                  <div className="max-w-4xl mx-auto w-full space-y-4">
-                    <div className="flex flex-wrap gap-3">
-                      <Badge className="bg-primary hover:bg-primary/90 text-white px-4 py-1 text-sm">
-                        Featured Story
-                      </Badge>
-                      <Badge variant="outline" className="bg-black/50 text-white border-white/20">
-                      {featuredArticle.category}
-                    </Badge>
-        </div>
-                  
-                    <h1 className="text-3xl md:text-5xl font-bold text-white group-hover:text-primary/90 transition-colors">
-                      {featuredArticle.title}
-                    </h1>
-                    
-                    <p className="text-white/90 text-base md:text-lg line-clamp-2 max-w-3xl">
-                      {featuredArticle.content.slice(0, 200)}...
-                    </p>
-
-                    <div className="flex items-center justify-between gap-4 pt-6 border-t border-white/20">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 ring-2 ring-primary">
-                        <AvatarImage src={featuredArticle.author.avatar} />
-                        <AvatarFallback>{featuredArticle.author.name[0]}</AvatarFallback>
-                      </Avatar>
-        <div>
-                        <p className="text-white font-medium">{featuredArticle.author.name}</p>
-                          <p className="text-white/80 text-sm">
-                          {formatDistanceToNow(new Date(featuredArticle.timestamp), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                      <Button size="lg" variant="secondary" className="gap-2">
-                        Read Story
-                        <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-        </div>
-          </Card>
-        </Link>
-        </section>
-      )}
-
-      {/* Regular Articles Grid with interspersed sections */}
-      <section className="w-full space-y-12">
-        {/* First batch of articles (0-14) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {restArticles.slice(0, 15).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
-
-      {/* Best of Week Section */}
-        {featuredSections[0] && featuredSections[0].articles.length > 0 && (
-        <section className="w-full">
-            {renderBestOfWeekFeed()}
-        </section>
-      )}
-
-        {/* Second batch of articles (15-29) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {restArticles.slice(15, 30).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-              </div>
-
-        {/* Trending Section - Compact Layout */}
-        {featuredSections[1] && featuredSections[1].articles.length > 0 && (
-          <section className="w-full bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20">
-                  <TrendingUp className="h-8 w-8 text-white" />
-                </div>
-                      <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                    Trending Now
-                  </h2>
-                  <p className="text-sm text-muted-foreground">What everyone is reading</p>
-                </div>
-              </div>
-              <Link href="/trending">
-                <Button variant="secondary" size="sm" className="gap-2 bg-white dark:bg-zinc-900 shadow-md">
-                  View All Trending
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-          </Link>
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">Latest Stories</h2>
+        <p className="text-muted-foreground">Stay updated with the latest news and insights</p>
       </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSections[1].articles.slice(0, 4).map((article, index) => (
-          <Link 
-            key={article.id} 
-            href={`/article/${article.id}`}
-            className="group"
-          >
-                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <div className="relative h-48">
-                <Image
-                  src={article.image}
-                  alt={article.title}
-                  fill
-                  className="object-cover transform group-hover:scale-105 transition-transform duration-300"
-                />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                <Badge 
-                  variant="secondary" 
-                        className="absolute top-2 left-2 bg-orange-500/90 text-white"
-                >
-                        #{index + 1}
-                </Badge>
-              </div>
-                    <div className="p-4">
-                      <h3 className="font-bold line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                  {article.title}
-                </h3>
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                        <Avatar className="h-6 w-6">
-                      <AvatarImage src={article.author.avatar} />
-                      <AvatarFallback>{article.author.name[0]}</AvatarFallback>
-                    </Avatar>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {article.author.name}
-                        </p>
-                </div>
-              </div>
-            </Card>
-          </Link>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((article) => (
+          <ArticleCard key={article.id} article={article} />
         ))}
       </div>
-      </section>
-        )}
 
-        {/* Third batch of articles (30-44) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {restArticles.slice(30, 45).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
-
-        {/* Editor's Picks Section */}
-        {featuredSections[2] && featuredSections[2].articles.length > 0 && (
-          <section className="w-full">
-            {renderFeaturedSection(featuredSections[2])}
-          </section>
-        )}
-
-        {/* Categories Section */}
-        {renderCategories()}
-
-        {/* Fourth batch of articles (45+) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {restArticles.slice(45).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
-
-      {/* Loading indicator and observer target */}
-        <div ref={observerTarget} className="w-full py-8 flex justify-center">
-        {loading && hasMore && (
-          <div className="animate-pulse flex space-x-4">
-            <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
-            <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
-            <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
-          </div>
-        )}
+      <div className="text-center pt-8">
+        <p className="text-muted-foreground">
+          More articles coming soon! This is demonstration content.
+        </p>
       </div>
-      </section>
     </div>
   )
 } 

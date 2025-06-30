@@ -1,0 +1,27 @@
+# Python files and dependencies
+requirements.txt
+app.py
+*.py
+*.pyc
+__pycache__/
+.env
+venv/
+env/
+
+# Firebase files (not needed for frontend)
+firebase.json
+firebase.rules
+firestore.indexes.json
+firestore.rules
+.firebaserc
+
+# Development files
+scripts/
+api/
+exclude.txt
+start-servers.js
+
+# Other
+.DS_Store
+.vscode/
+*.log

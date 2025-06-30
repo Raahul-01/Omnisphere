@@ -2,9 +2,6 @@
 
 import { LeftSidebar } from "@/components/left-sidebar"
 import { useState, useEffect } from "react"
-import { db } from "@/lib/firebase"
-import { collection, getDocs, query, orderBy, where, limit } from "firebase/firestore"
-import { Feed, FeedItem } from "@/components/feed"
 import { useAuth } from "@/lib/auth-context"
 import { ContentDisplay } from "@/components/content-display"
 import { CategoryTabs } from "@/components/category-tabs"
@@ -67,99 +64,79 @@ interface Category {
   gradient: string;
 }
 
+// Mock data for demonstration
+const mockFeaturedStories: FeedItem[] = [
+  {
+    id: '1',
+    title: 'Breaking: Major Technology Breakthrough Announced',
+    content: 'Scientists have announced a revolutionary breakthrough in quantum computing that could change the world as we know it.',
+    author: {
+      name: 'John Smith',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john'
+    },
+    category: 'Technology',
+    timestamp: new Date().toISOString(),
+    image: '/placeholder.jpg',
+    features: { breaking_news: true }
+  },
+  {
+    id: '2',
+    title: 'Global Climate Summit Reaches Historic Agreement',
+    content: 'World leaders have reached a groundbreaking agreement on climate action at the latest summit.',
+    author: {
+      name: 'Sarah Johnson',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah'
+    },
+    category: 'World',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    image: '/placeholder.jpg',
+    features: { breaking_news: true }
+  }
+];
+
+const mockTrendingStories: FeedItem[] = [
+  {
+    id: '3',
+    title: 'AI Revolution: New Breakthrough Changes Everything',
+    content: 'Artificial intelligence reaches new milestone with latest development.',
+    author: {
+      name: 'Mike Chen',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike'
+    },
+    category: 'Technology',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    image: '/placeholder.jpg',
+    features: { trending_news: true }
+  },
+  {
+    id: '4',
+    title: 'Market Surge: Tech Stocks Hit All-Time High',
+    content: 'Technology stocks continue their upward trajectory in today\'s trading.',
+    author: {
+      name: 'Lisa Park',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisa'
+    },
+    category: 'Business',
+    timestamp: new Date(Date.now() - 10800000).toISOString(),
+    image: '/placeholder.jpg',
+    features: { trending_news: true }
+  }
+];
+
 export default function Home() {
   const { user, loading: authLoading } = useAuth()
   const [feedData, setFeedData] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0)
-  const [featuredStories, setFeaturedStories] = useState<FeedItem[]>([])
-  const [trendingStories, setTrendingStories] = useState<FeedItem[]>([])
+  const [featuredStories, setFeaturedStories] = useState<FeedItem[]>(mockFeaturedStories)
+  const [trendingStories, setTrendingStories] = useState<FeedItem[]>(mockTrendingStories)
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // Fetch featured stories with proper indexing
-        const featuredQuery = query(
-          collection(db, 'generated_content'),
-          where('features.breaking_news', '==', true),
-          orderBy('time', 'desc'),
-          limit(5)
-        )
-        
-        const featuredSnapshot = await getDocs(featuredQuery)
-        const featured = featuredSnapshot.docs.map(doc => ({
-          id: doc.id,
-          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
-          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
-          author: {
-            name: doc.data().user || "Anonymous",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
-          },
-          category: doc.data().category || "General",
-          timestamp: doc.data().time || new Date().toISOString(),
-          image: doc.data().image_url || "/placeholder.jpg",
-          features: doc.data().features || {}
-        }))
-
-        setFeaturedStories(featured)
-        
-        // Fetch trending stories with proper indexing
-        const trendingQuery = query(
-          collection(db, 'generated_content'),
-          where('features.trending_news', '==', true),
-          orderBy('time', 'desc'),
-          limit(4)
-        )
-
-        const trendingSnapshot = await getDocs(trendingQuery)
-        const trending = trendingSnapshot.docs.map(doc => ({
-          id: doc.id,
-          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
-          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
-          author: {
-            name: doc.data().user || "Anonymous",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
-          },
-          category: doc.data().category || "General",
-          timestamp: doc.data().time || new Date().toISOString(),
-          image: doc.data().image_url || "/placeholder.jpg",
-          features: doc.data().features || {}
-        }))
-
-        setTrendingStories(trending)
-        
-        // Fetch regular feed with proper indexing
-        const feedQuery = query(
-          collection(db, 'generated_content'),
-          where('features.home', '==', true),
-          orderBy('time', 'desc'),
-          limit(10)
-        )
-
-        const feedSnapshot = await getDocs(feedQuery)
-        const feed = feedSnapshot.docs.map(doc => ({
-          id: doc.id,
-          title: (doc.data().original_headline || doc.data().headline || "Untitled").replace(/\*\*|##/g, ''),
-          content: (doc.data().content || "").replace(/\*\*|##/g, ''),
-          author: {
-            name: doc.data().user || "Anonymous",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${doc.data().user || 'anonymous'}`
-          },
-          category: doc.data().category || "General",
-          timestamp: doc.data().time || new Date().toISOString(),
-          image: doc.data().image_url || "/placeholder.jpg",
-          features: doc.data().features || {}
-        }))
-
-        setFeedData(feed)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
+    // Simulate loading with mock data
+    setTimeout(() => {
+      setFeedData(mockFeaturedStories)
+      setIsLoading(false)
+    }, 1000)
   }, [])
 
   // Rotate featured stories every 2 seconds

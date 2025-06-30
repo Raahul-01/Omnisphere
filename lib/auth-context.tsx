@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from './firebase';
 
 interface User {
   uid: string;
@@ -24,24 +23,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user: any) => {
-      setUser(user);
+    // Simulate auth check with mock data
+    setTimeout(() => {
       setLoading(false);
-    });
-
-    return unsubscribe;
+    }, 100);
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await auth.signInWithEmailAndPassword(email, password);
+    // Mock sign in
+    setUser({
+      uid: 'mock-user-id',
+      email: email,
+      displayName: 'Mock User'
+    });
   };
 
   const signUp = async (email: string, password: string) => {
-    await auth.createUserWithEmailAndPassword(email, password);
+    // Mock sign up
+    setUser({
+      uid: 'mock-user-id',
+      email: email,
+      displayName: 'Mock User'
+    });
   };
 
   const logout = async () => {
-    await auth.signOut();
+    // Mock logout
+    setUser(null);
   };
 
   const value = {

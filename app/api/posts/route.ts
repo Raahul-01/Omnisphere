@@ -100,22 +100,46 @@ export async function GET(request: Request) {
     const limitParam = searchParams.get('limit');
     const limitNumber = limitParam ? parseInt(limitParam) : 20;
 
-    console.log(`📰 Posts API: Serving ${Math.min(limitNumber, mockPosts.length)} articles`);
-    
-    // Apply limit to mock data
+    // 1. Try Firebase Admin SDK (server-side, no client keys required)
+    try {
+      const { adminDb } = await import('@/lib/firebaseAdmin');
+      if (adminDb) {
+        const snapshot = await adminDb
+          .collection('articles')
+          .orderBy('createdAt', 'desc')
+          .limit(limitNumber)
+          .get();
+
+        if (!snapshot.empty) {
+          const adminPosts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          return NextResponse.json({ posts: adminPosts, total: adminPosts.length });
+        }
+      }
+    } catch (adminError) {
+      console.warn('[Posts API] Admin SDK fetch failed:', adminError instanceof Error ? adminError.message : adminError);
+    }
+
+    // 2. Try Client SDK (requires public credentials)
+    try {
+      const { db } = await import('@/lib/firebase');
+      const { collection, getDocs, query, orderBy, limit } = await import('firebase/firestore');
+
+      const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(limitNumber));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const clientPosts = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        return NextResponse.json({ posts: clientPosts, total: clientPosts.length });
+      }
+    } catch (clientError) {
+      console.warn('[Posts API] Client SDK fetch failed:', clientError instanceof Error ? clientError.message : clientError);
+    }
+
+    // 3. Fallback to mock data
+    console.info('[Posts API] Using mock data – configure Firebase credentials to load real content');
     const limitedPosts = mockPosts.slice(0, limitNumber);
-    
-    return NextResponse.json({
-      posts: limitedPosts,
-      total: mockPosts.length,
-      message: 'Using sample data - configure Firebase in .env.local to load real articles'
-    });
-    
+    return NextResponse.json({ posts: limitedPosts, total: mockPosts.length });
   } catch (error) {
     console.error('Error in posts API:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch posts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
   }
 } 

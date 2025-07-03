@@ -104,6 +104,7 @@ export async function GET(request: Request) {
     try {
       const { adminDb } = await import('@/lib/firebaseAdmin');
       if (adminDb) {
+        // Try articles collection first
         const snapshot = await adminDb
           .collection('articles')
           .orderBy('createdAt', 'desc')
@@ -113,6 +114,31 @@ export async function GET(request: Request) {
         if (!snapshot.empty) {
           const adminPosts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           return NextResponse.json({ posts: adminPosts, total: adminPosts.length });
+        }
+
+        // Try posts collection as fallback
+        const postsSnap = await adminDb
+          .collection('posts')
+          .orderBy('createdAt', 'desc')
+          .limit(limitNumber)
+          .get();
+        if (!postsSnap.empty) {
+          const adminPosts = postsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          return NextResponse.json({ posts: adminPosts, total: adminPosts.length });
+        }
+
+        // Try Realtime Database (if Firestore empty)
+        try {
+          const { getDatabase } = await import('firebase-admin/database');
+          const dbRT = getDatabase();
+          const ref = dbRT.ref('articles').limitToLast(limitNumber);
+          const snapRT = await ref.get();
+          if (snapRT.exists()) {
+            const rtData = Object.entries(snapRT.val()).map(([id, value]: any) => ({ id, ...value })).reverse();
+            return NextResponse.json({ posts: rtData, total: rtData.length });
+          }
+        } catch (rtdbErr) {
+          console.warn('[Posts API] RTDB fetch failed:', rtdbErr instanceof Error ? rtdbErr.message : rtdbErr);
         }
       }
     } catch (adminError) {

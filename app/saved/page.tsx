@@ -134,9 +134,19 @@ export default function Saved() {
   const [savedArticles, setSavedArticles] = useState<any[]>([])
 
   useEffect(() => {
-    const saved = localStorage.getItem("savedArticles")
-    if (saved) {
-      setSavedArticles(JSON.parse(saved))
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem("savedArticles") : null
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Ensure we always have an array
+        if (Array.isArray(parsed)) {
+          setSavedArticles(parsed)
+        }
+      }
+    } catch (err) {
+      // If parsing fails or data is corrupted, clear the invalid storage entry to avoid repeated crashes
+      console.error('Failed to read saved articles from localStorage:', err)
+      localStorage.removeItem("savedArticles")
     }
   }, [])
 

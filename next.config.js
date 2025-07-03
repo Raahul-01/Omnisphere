@@ -95,7 +95,7 @@ const nextConfig = {
         },
         {
           key: 'Content-Security-Policy',
-          value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pagead2.googlesyndication.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http: blob:; media-src 'none'; connect-src 'self' https://firestore.googleapis.com https://www.googleapis.com; font-src 'self' data:; frame-src 'self' https://pagead2.googlesyndication.com;"
+          value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http: blob:; media-src 'none'; connect-src 'self' https://firestore.googleapis.com https://www.googleapis.com https://vercel.live; font-src 'self' data:; frame-src 'self' https://pagead2.googlesyndication.com;"
         }
       ]
     }

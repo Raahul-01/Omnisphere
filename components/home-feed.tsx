@@ -1,7 +1,6 @@
 "use client"
 
-import React from 'react'
-import { useState } from "react"
+import React, { useState, useEffect } from 'react'
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock, TrendingUp, Crown, Star } from "lucide-react"
@@ -28,7 +27,7 @@ interface Article {
   };
 }
 
-// Mock articles data
+// Mock articles data (fallback)
 const mockArticles: Article[] = [
   {
     id: '1',
@@ -96,7 +95,31 @@ const mockArticles: Article[] = [
 ];
 
 export function HomeFeed() {
-  const [articles] = useState<Article[]>(mockArticles)
+  const [articles, setArticles] = useState<Article[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const res = await fetch('/api/posts?limit=30', { cache: 'no-store' })
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setArticles(data)
+        } else if (Array.isArray(data.posts)) {
+          setArticles(data.posts)
+        } else {
+          setArticles(mockArticles)
+        }
+      } catch (err) {
+        console.error('[HomeFeed] Error fetching posts:', err)
+        setArticles(mockArticles)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [])
 
   // ArticleCard component
   const ArticleCard = ({ article }: { article: Article }) => (
@@ -177,6 +200,12 @@ export function HomeFeed() {
         </div>
       </Card>
     </Link>
+  )
+
+  if (loading) return (
+    <div className="flex justify-center py-10">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
   )
 
   return (

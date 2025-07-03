@@ -18,6 +18,26 @@ service cloud.firestore {
       return recentRequests < 100; // 100ms between requests
     }
 
+    // Allow public read access to articles - this is the main content
+    match /articles/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && !isRateLimited();
+      allow delete: if isAdmin();
+    }
+
+    // Allow public read access to posts - alternative content structure
+    match /posts/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && !isRateLimited();
+      allow delete: if isAdmin();
+    }
+
+    // Allow public read access to categories
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Allow public read access to generated content with rate limiting
     match /generated_content/{document=**} {
       allow read: if true;

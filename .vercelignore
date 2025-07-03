@@ -17,7 +17,7 @@ firestore.rules
 
 # Development files
 scripts/
-api/
+# Removed 'api/' ignore so that Next.js API routes inside /app/api/ are deployed
 exclude.txt
 start-servers.js
 

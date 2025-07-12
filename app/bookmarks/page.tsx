@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Plus, Bookmark, MoreVertical } from "lucide-react"
 
@@ -35,7 +37,6 @@ export default function Bookmarks() {
               </div>
             ))}
           </div>
-        </div>
       </div>
     </div>
   )

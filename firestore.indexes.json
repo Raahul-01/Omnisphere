@@ -1,0 +1,221 @@
+{
+    "indexes": [
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.breaking_news",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.trending_news",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.home",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.best_of_week",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.categories",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "category",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "generated_content",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "features.editor_picks",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "time",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "bookmarks",
+        "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "articles",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "views",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "articles",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "published",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "articles",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "featured",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "articles",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "views",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "fieldOverrides": []
+}

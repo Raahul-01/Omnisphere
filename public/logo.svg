@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#gradient)" />
+  
+  <!-- Orbit Lines -->
+  <circle cx="100" cy="100" r="70" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none" />
+  <circle cx="100" cy="100" r="50" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" />
+  
+  <!-- Central Sphere -->
+  <circle cx="100" cy="100" r="30" fill="white" filter="url(#glow)" />
+  
+  <!-- Orbiting Spheres -->
+  <circle cx="160" cy="100" r="10" fill="white" filter="url(#glow)" />
+  <circle cx="100" cy="40" r="10" fill="white" filter="url(#glow)" />
+  <circle cx="40" cy="100" r="10" fill="white" filter="url(#glow)" />
+  
+  <!-- Definitions -->
+  <defs>
+    <!-- Gradient -->
+    <linearGradient id="gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF7043"/>
+      <stop offset="100%" stop-color="#FF5722"/>
+    </linearGradient>
+    
+    <!-- Glow Effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+</svg> 

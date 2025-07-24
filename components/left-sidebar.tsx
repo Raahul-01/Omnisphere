@@ -14,7 +14,8 @@ import {
   UserPlus,
   Menu,
   Briefcase,
-  Library
+  Library,
+  FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useCallback, memo, useMemo } from "react"
@@ -33,13 +34,7 @@ const routes = [
     color: "text-orange-500",
     description: "Your personalized feed"
   },
-  {
-    label: 'Articles',
-    icon: Newspaper,
-    href: '/library',
-    color: "text-orange-600",
-    description: "Latest articles and news"
-  },
+  
   {
     label: 'Jobs',
     icon: Briefcase,
@@ -53,6 +48,13 @@ const routes = [
     color: "text-orange-600",
     href: '/categories',
     description: "Browse by topics"
+  },
+  {
+    label: 'All Articles',
+    icon: FileText,
+    color: "text-orange-600",
+    href: '/articles',
+    description: "Browse all articles"
   },
   {
     label: 'Trending',

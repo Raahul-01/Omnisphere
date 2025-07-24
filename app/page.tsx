@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import {
   fetchBreakingNews,
   fetchTrendingNews,
-  fetchHomeFeed,
+  fetchAllContent,
   FeedItem
 } from "@/lib/firebase-utils"
 
@@ -46,8 +46,9 @@ export default function Home() {
         const trending = await fetchTrendingNews(4)
         setTrendingStories(trending)
 
-        // Fetch regular feed
-        await fetchHomeFeed(25)
+        // Fetch all content for the home feed
+        const allContent = await fetchAllContent(25)
+        console.log(`✅ Home page: Loaded ${allContent.length} articles from all collections`)
 
       } catch (error) {
         console.error('Error fetching data:', error)

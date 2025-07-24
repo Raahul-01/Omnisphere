@@ -3,8 +3,7 @@
 import React, { JSX } from 'react'
 import type { ReactNode } from 'react'
 import { useEffect, useState, useRef, useCallback } from "react"
-import { collection, query, orderBy, limit, getDocs, startAfter, where, DocumentData } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { fetchAllContent, FeedItem } from "@/lib/firebase-utils"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock, BookmarkPlus, TrendingUp, Crown, Star, ArrowRight, BookOpen, LineChart } from "lucide-react"
@@ -16,22 +15,8 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { categoryColors } from "@/lib/categories"
 
-interface Article extends DocumentData {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
-  category: string;
-  timestamp: string;
-  image: string;
-  features?: {
-    best_of_week?: boolean;
-    trending_news?: boolean;
-  };
-}
+// Use FeedItem from firebase-utils instead of local Article interface
+interface Article extends FeedItem {}
 
 interface FeaturedSection {
   title: string;
@@ -51,7 +36,7 @@ export function HomeFeed() {
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
-  const [lastDoc, setLastDoc] = useState<DocumentData | null>(null)
+  const [lastDoc, setLastDoc] = useState<any | null>(null)
   const [featuredSections, setFeaturedSections] = useState<FeaturedSection[]>([])
   const [categories, setCategories] = useState<CategoryStats[]>([])
   const observerTarget = useRef<HTMLDivElement>(null)
@@ -112,254 +97,105 @@ export function HomeFeed() {
 
   const fetchFeaturedSections = async () => {
     try {
-      // Fetch articles from the 'articles' collection instead of 'generated_content'
-      // Since the articles collection doesn't have feature flags, we'll use different logic
+      console.log('🔄 Fetching featured sections using all content...');
+      
+      // Use fetchAllContent to get all articles
+      const allContent = await fetchAllContent(30);
+      
+      if (allContent.length === 0) {
+        console.log('❌ No content available for featured sections');
+        return;
+      }
 
-      // Fetch articles without ordering first (to avoid index issues)
-      const bestOfWeekQuery = query(
-        collection(db, 'articles'),
-        limit(6)
-      )
-      const bestOfWeekSnapshot = await getDocs(bestOfWeekQuery)
+      console.log(`✅ Found ${allContent.length} articles for featured sections`);
 
-      // Fetch articles for Trending (skip first 2, take next 4)
-      const trendingQuery = query(
-        collection(db, 'articles'),
-        limit(10) // Get more to skip some
-      )
-      const trendingSnapshot = await getDocs(trendingQuery)
-
-      // Fetch Editor's Picks (random selection from available articles)
-      const editorPicksQuery = query(
-        collection(db, 'articles'),
-        limit(6)
-      )
-      const editorPicksSnapshot = await getDocs(editorPicksQuery)
-
+      // Create featured sections from the available content
       const sections: FeaturedSection[] = [
         {
           title: "Best of the Week",
-          articles: bestOfWeekSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...mapArticleDataFromArticlesCollection(doc.data())
-          })),
+          articles: allContent.slice(0, 6), // First 6 articles
           type: 'best-of-week',
           icon: Crown,
           color: 'text-yellow-500'
         },
         {
           title: "Trending Now",
-          // Skip first 2 articles and take next 4 for variety
-          articles: trendingSnapshot.docs.slice(2, 6).map(doc => ({
-            id: doc.id,
-            ...mapArticleDataFromArticlesCollection(doc.data())
-          })),
+          articles: allContent.slice(6, 10), // Next 4 articles
           type: 'trending',
           icon: TrendingUp,
           color: 'text-orange-500'
         },
         {
           title: "Editor's Picks",
-          // Take different articles for editor's picks
-          articles: editorPicksSnapshot.docs.slice(1, 5).map(doc => ({
-            id: doc.id,
-            ...mapArticleDataFromArticlesCollection(doc.data())
-          })),
+          articles: allContent.slice(10, 14), // Next 4 articles
           type: 'editor-picks',
           icon: Star,
           color: 'text-blue-500'
         }
-      ]
+      ];
 
-      setFeaturedSections(sections)
+      setFeaturedSections(sections);
+      console.log('✅ Featured sections created successfully');
     } catch (error) {
-      console.error("Error fetching featured sections:", error)
+      console.error("❌ Error fetching featured sections:", error);
     }
-  }
+  };
 
-  // Map data from the old generated_content collection format
-  const mapArticleData = (data: any) => {
-    // Handle Firestore Timestamp conversion
-    const getTimestamp = (firestoreTimestamp: any) => {
-      if (!firestoreTimestamp) return new Date().toISOString()
-
-      // If it's a Firestore Timestamp object
-      if (firestoreTimestamp.toDate && typeof firestoreTimestamp.toDate === 'function') {
-        return firestoreTimestamp.toDate().toISOString()
-      }
-
-      // If it's already a Date object
-      if (firestoreTimestamp instanceof Date) {
-        return firestoreTimestamp.toISOString()
-      }
-
-      // If it's a string, return as is
-      if (typeof firestoreTimestamp === 'string') {
-        return firestoreTimestamp
-      }
-
-      // Fallback
-      return new Date().toISOString()
-    }
-
-    return {
-      title: (data.original_headline || data.headline || "Untitled").replace(/\*\*|##/g, ''),
-      content: (data.content || "").replace(/\*\*|##/g, ''),
-      author: {
-        name: data.user || "Anonymous",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user || 'anonymous'}`
-      },
-      category: data.category || "General",
-      timestamp: getTimestamp(data.time),
-      image: data.image_url || "/placeholder.jpg",
-      features: data.features || {}
-    }
-  }
-
-  // Map data from the new articles collection format
-  const mapArticleDataFromArticlesCollection = (data: any) => {
-    // Handle Firestore Timestamp conversion
-    const getTimestamp = (firestoreTimestamp: any) => {
-      if (!firestoreTimestamp) return new Date().toISOString()
-
-      // If it's a Firestore Timestamp object
-      if (firestoreTimestamp.toDate && typeof firestoreTimestamp.toDate === 'function') {
-        return firestoreTimestamp.toDate().toISOString()
-      }
-
-      // If it's already a Date object
-      if (firestoreTimestamp instanceof Date) {
-        return firestoreTimestamp.toISOString()
-      }
-
-      // If it's a string, return as is
-      if (typeof firestoreTimestamp === 'string') {
-        return firestoreTimestamp
-      }
-
-      // Fallback
-      return new Date().toISOString()
-    }
-
-    return {
-      title: (data.title || "Untitled").replace(/\*\*|##/g, ''),
-      content: (data.content || data.excerpt || "").replace(/\*\*|##/g, ''),
-      author: {
-        name: data.authorName || "Anonymous",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.authorName || 'anonymous'}`
-      },
-      category: data.categoryName || data.categoryId || "General",
-      timestamp: getTimestamp(data.createdAt || data.updatedAt),
-      image: data.image || data.coverImage || "/placeholder.jpg",
-      features: {} // Articles collection doesn't have features, so empty object
-    }
-  }
-
-  const fetchArticles = async (lastVisible?: any) => {
+  const fetchArticles = async (offset = 0) => {
     try {
-      console.log('🔄 HomeFeed: Fetching articles from articles collection...');
-      const articlesRef = collection(db, 'articles')
+      console.log('🔄 HomeFeed: Fetching all content from Firebase...');
+      
+      // Use fetchAllContent to get articles from both collections
+      const allContent = await fetchAllContent(50); // Fetch more articles
+      
+      console.log(`✅ HomeFeed: Found ${allContent.length} articles from all collections`);
 
-      // Fetch from articles collection using createdAt for ordering
-      let q = query(
-        articlesRef,
-        orderBy('createdAt', 'desc'),
-        limit(30)
-      )
-
-      if (lastVisible) {
-        q = query(
-          articlesRef,
-          orderBy('createdAt', 'desc'),
-          startAfter(lastVisible),
-          limit(30)
-        )
-      }
-
-      const querySnapshot = await getDocs(q)
-      console.log(`✅ HomeFeed: Found ${querySnapshot.size} articles out of ${30} requested`);
-
-      if (querySnapshot.empty) {
+      if (allContent.length === 0) {
         console.log('❌ HomeFeed: No articles found');
-        setHasMore(false)
-        return
+        setHasMore(false);
+        setLoading(false);
+        return;
       }
 
-      // Check if we have more documents
-      const hasMoreDocs = querySnapshot.size === 30
-      setHasMore(hasMoreDocs)
-
-      if (querySnapshot.size > 0) {
-        setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1])
-      }
-
-      const fetchedArticles: Article[] = []
-
-      querySnapshot.docs.forEach(doc => {
-        try {
-          const article = {
-            id: doc.id,
-            ...mapArticleDataFromArticlesCollection(doc.data())
-          }
-          fetchedArticles.push(article)
-        } catch (error) {
-          console.error(`❌ Error processing document ${doc.id}:`, error);
-        }
-      })
+      // Convert FeedItem to Article (they're now the same interface)
+      const fetchedArticles: Article[] = allContent.map(item => ({
+        ...item
+      }));
 
       console.log('📄 HomeFeed: Sample articles:', fetchedArticles.slice(0, 2));
 
-      if (lastVisible) {
-        setArticles(prev => [...prev, ...fetchedArticles])
-      } else {
-        setArticles(fetchedArticles)
-      }
-      } catch (error) {
-        console.error("❌ HomeFeed: Error fetching articles:", error)
-      } finally {
-        setLoading(false)
-      }
+      setArticles(fetchedArticles);
+      setHasMore(false); // Since we're fetching all content at once
+      
+    } catch (error) {
+      console.error("❌ HomeFeed: Error fetching articles:", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-  // Intersection Observer callback
+  // Intersection Observer callback - disabled since we fetch all at once
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const target = entries[0]
-    if (target.isIntersecting && hasMore && !loading) {
-      fetchArticles(lastDoc)
-    }
-  }, [hasMore, loading, lastDoc])
+    // No longer needed since we fetch all content at once
+  }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, {
-      root: null,
-      rootMargin: '20px',
-      threshold: 1.0
-    })
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
-      }
-    }
-  }, [handleObserver])
+    // No longer need intersection observer since we fetch all content at once
+  }, [handleObserver]);
 
   const fetchCategoryStats = async () => {
     try {
-      const categoriesRef = collection(db, 'generated_content')
-      const snapshot = await getDocs(categoriesRef)
+      console.log('🔄 Fetching category stats from all content...');
+      
+      // Use fetchAllContent to get all articles and count categories
+      const allContent = await fetchAllContent(100); // Get more articles for better stats
       
       // Count articles per category
-      const categoryCount: { [key: string]: number } = {}
-      snapshot.docs.forEach(doc => {
-        const category = doc.data().category || 'Uncategorized'
-        categoryCount[category] = (categoryCount[category] || 0) + 1
-      })
-
-      // Use centralized category colors
+      const categoryCount: { [key: string]: number } = {};
+      allContent.forEach(article => {
+        const category = article.category || 'Uncategorized';
+        categoryCount[category] = (categoryCount[category] || 0) + 1;
+      });
 
       // Convert to array and sort by count
       const categoryStats = Object.entries(categoryCount)
@@ -369,13 +205,14 @@ export function HomeFeed() {
           color: categoryColors[name] || 'bg-gray-100 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400'
         }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 8) // Get top 8 categories
+        .slice(0, 8); // Get top 8 categories
 
-      setCategories(categoryStats)
+      setCategories(categoryStats);
+      console.log(`✅ Category stats calculated for ${categoryStats.length} categories`);
     } catch (error) {
-      console.error("Error fetching category stats:", error)
+      console.error("❌ Error fetching category stats:", error);
     }
-  }
+  };
 
   useEffect(() => {
     fetchArticles()

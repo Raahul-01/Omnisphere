@@ -9,13 +9,11 @@ import {
   ListFilter,
   Star,
   Settings,
-  HelpCircle,
   LogOut,
   User,
   UserPlus,
   Menu,
   Briefcase,
-  BookOpenIcon,
   Library
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -38,7 +36,7 @@ const routes = [
   {
     label: 'Articles',
     icon: Newspaper,
-    href: '/articles',
+    href: '/library',
     color: "text-orange-600",
     description: "Latest articles and news"
   },
@@ -87,7 +85,7 @@ const signedInItems = [
 
 // Bottom items for non-signed-in users
 const signedOutItems = [
-  { name: "Website Info", icon: Settings, href: "/website-info", description: "About OminiSphere" },
+  { name: "Website Info", icon: Settings, href: "/website-info", description: "About OmniSphere" },
 ] as const;
 
 // Memoized navigation button component
@@ -100,7 +98,7 @@ const NavButton = memo(({
   isActive 
 }: { 
   href: string
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   label: string
   color: string
   description: string
@@ -191,7 +189,7 @@ export const LeftSidebar = memo(function LeftSidebar() {
         <div className="flex flex-col h-full overflow-y-auto">
           <div className="p-4 sticky top-0 bg-background z-10 border-b">
             <div className="font-bold text-2xl tracking-tight">
-              <span className="text-orange-500">Omini</span>
+              <span className="text-orange-500">Omni</span>
               <span>Sphere</span>
               <span className="text-orange-500">.</span>
             </div>
@@ -267,7 +265,7 @@ export const LeftSidebar = memo(function LeftSidebar() {
                 className="w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-50"
                 asChild
               >
-                <Link href="/sign-up">
+                <Link href="/auth">
                   <UserPlus className="mr-2 h-4 w-4" />
                   Sign Up
                 </Link>

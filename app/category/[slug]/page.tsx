@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { CategoryFeed } from "@/components/category-feed"
-import { CATEGORIES } from "@/lib/categories"
+import { CATEGORIES, ICON_MAP } from "@/lib/categories"
 import { notFound } from "next/navigation"
 
 interface CategoryPageProps {
@@ -31,12 +31,14 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     notFound()
   }
 
+  const IconComponent = ICON_MAP[category.iconName];
+
   return (
     <div className="container mx-auto">
       <div className="px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <category.icon className={`w-8 h-8 ${category.color}`} />
+            {IconComponent && <IconComponent className={`w-8 h-8 ${category.color}`} />}
             <h1 className="text-3xl font-bold">{category.name}</h1>
           </div>
           <p className="text-muted-foreground text-lg">

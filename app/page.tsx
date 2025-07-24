@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context"
 import { HomeFeed } from "@/components/home-feed"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getCategoriesForHomePage } from "@/lib/categories"
+import { getCategoriesForHomePage, ICON_MAP } from "@/lib/categories"
 import {
   Clock,
   TrendingUp,
@@ -208,7 +208,10 @@ export default function Home() {
             
             {/* Content */}
             <div className="relative h-full p-6 flex flex-col justify-between bg-gradient-to-br from-black/10 to-black/5 group-hover:from-black/20 group-hover:to-black/10 transition-all duration-300">
-              <category.icon className={`h-8 w-8 ${category.color} drop-shadow-lg`} />
+              {(() => {
+                const IconComponent = ICON_MAP[category.iconName];
+                return IconComponent ? <IconComponent className={`h-8 w-8 ${category.color} drop-shadow-lg`} /> : null;
+              })()}
               <div>
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2 drop-shadow-sm">
                   {category.name}
@@ -249,7 +252,7 @@ export default function Home() {
 
 const categories = getCategoriesForHomePage().map(cat => ({
   name: cat.name,
-  icon: cat.icon,
+  iconName: cat.iconName,
   color: cat.color,
   count: 0, // Will be populated with real data from Firebase
   gradient: cat.gradient

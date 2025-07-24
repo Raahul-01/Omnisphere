@@ -83,9 +83,17 @@ MAX_FILE_AGE_HOURS = 12
 SIMILARITY_THRESHOLD = 80
 
 # Firebase setup
-cred = credentials.Certificate("firebase-credentials.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+try:
+    cred = credentials.Certificate("firebase-credentials.json")
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    print("✅ Firebase Admin initialized successfully")
+except ValueError as e:
+    if "already exists" in str(e):
+        print("ℹ️ Firebase app already initialized, using existing app")
+        db = firestore.client()
+    else:
+        raise e
 
 # Configure logging
 logging.basicConfig(

@@ -399,7 +399,7 @@ export function HomeFeed() {
               </p>
             </div>
           </div>
-          <Link href={`/${section.type}`}>
+          <Link href={section.type === 'editor-picks' ? '/library' : `/${section.type}`}>
             <Button variant="ghost" size="sm" className="gap-2">
               View All
               <ArrowRight className="h-4 w-4" />

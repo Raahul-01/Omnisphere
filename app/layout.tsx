@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
-import { Navbar } from "@/components/navbar"
 import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -85,8 +84,12 @@ export const metadata: Metadata = {
   },
   category: 'news',
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
-    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION,
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && { 
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION 
+    }),
+    ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION && { 
+      yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION 
+    }),
   },
   alternates: {
     canonical: '/',
@@ -129,7 +132,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <head>
-        <meta name="google-adsense-account" content={process.env.NEXT_PUBLIC_ADSENSE_ID} />
+        {process.env.NEXT_PUBLIC_ADSENSE_ID && (
+          <meta name="google-adsense-account" content={process.env.NEXT_PUBLIC_ADSENSE_ID} />
+        )}
         <meta name="application-name" content="OmniSphere" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

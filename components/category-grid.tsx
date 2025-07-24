@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card"
 import Image from "next/image"
 import Link from "next/link"
-import { CATEGORIES, type CategoryWithStats } from "@/lib/categories"
+import { CATEGORIES, ICON_MAP, type CategoryWithStats } from "@/lib/categories"
 
 interface CategoryGridProps {
   categories: CategoryWithStats[];
@@ -32,7 +32,7 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
             }
           };
 
-          const IconComponent = categoryConfig.icon;
+          const IconComponent = ICON_MAP[categoryConfig.iconName];
 
           return (
             <Link

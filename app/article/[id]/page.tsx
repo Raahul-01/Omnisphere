@@ -20,6 +20,7 @@ interface Article extends DocumentData {
   id: string
   original_headline?: string
   headline?: string
+  title?: string
   content: string
   category: string
   image_url?: string
@@ -183,10 +184,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: article.title,
+    title: article.original_headline || article.headline || article.title,
     description: article.excerpt,
     openGraph: {
-      title: article.title,
+      title: article.original_headline || article.headline || article.title,
       description: article.excerpt,
       images: article.imageUrl ? [article.imageUrl] : [],
     },
@@ -204,9 +205,17 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   // Validate required data
-  const title = article.original_headline || article.headline;
-  if (!article.content || !title) {
-    console.error('Invalid article data - missing content or title:', article);
+  const title = article.original_headline || article.headline || article.title;
+  const content = article.content?.trim();
+  if (!content || !title) {
+    console.error('Invalid article data - missing content or title:', {
+      id: article.id,
+      hasTitle: !!title,
+      hasContent: !!content,
+      contentLength: content?.length || 0,
+      titleValue: title,
+      contentPreview: content?.substring(0, 100)
+    });
     notFound();
   }
 

@@ -117,16 +117,24 @@ export function ArticleContent({ article }: ArticleContentProps) {
       </header>
 
       <div className="space-y-6">
-        {article.content.split('\n').map((paragraph, index) => (
-          paragraph.trim() && (
-            <div 
-              key={index} 
-              className="text-lg text-zinc-900 dark:text-zinc-100"
-            >
-              {formatText(paragraph)}
-            </div>
-          )
-        ))}
+        {article.content?.trim() ? (
+          article.content.split(/\n+/).map((paragraph, index) => {
+            const trimmedParagraph = paragraph.trim();
+            
+            return trimmedParagraph && (
+              <div 
+                key={index} 
+                className="text-lg text-zinc-900 dark:text-zinc-100 leading-relaxed"
+              >
+                {formatText(trimmedParagraph)}
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No content available for this article.</p>
+          </div>
+        )}
       </div>
     </article>
   )

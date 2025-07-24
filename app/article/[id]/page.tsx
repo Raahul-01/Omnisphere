@@ -63,7 +63,7 @@ const getArticleData = async (id: string): Promise<Article | null> => {
     }
 
     const cleanId = decodeURIComponent(id).trim();
-    const docRef = doc(db, 'articles', cleanId);
+    const docRef = doc(db, 'generated_content', cleanId);
     
     const docSnap = await getDoc(docRef);
 
@@ -99,8 +99,8 @@ const getRelatedArticles = async (id: string, category: string): Promise<Related
     console.log('Fetching related articles for category:', category);
 
     const q = query(
-      collection(db, 'articles'),
-      where('categoryName', '==', category)
+      collection(db, 'generated_content'),
+      where('category', '==', category)
     );
     
     const querySnapshot = await getDocs(q);
@@ -142,15 +142,15 @@ const getRelatedArticles = async (id: string, category: string): Promise<Related
 
         return {
           id: doc.id,
-          title: data.title || "Untitled Article",
-          content: data.content || data.excerpt || "",
+          title: data.original_headline || data.headline || data.title || "Untitled Article",
+          content: data.content || "",
           author: {
-            name: data.authorName || "Anonymous",
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'Anonymous')}&background=random&size=128`
+            name: data.user || "Anonymous",
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user || 'Anonymous')}&background=random&size=128`
           },
-          category: data.categoryName || data.categoryId || "Uncategorized",
-          timestamp: getTimestamp(data.createdAt || data.updatedAt),
-          image: data.image || data.coverImage || '/placeholder.jpg',
+          category: data.category || "Uncategorized",
+          timestamp: data.time || new Date().toISOString(),
+          image: data.image_url || '/placeholder.jpg',
         };
       })
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -183,13 +183,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const title = article.original_headline || article.headline || article.title;
+  const description = article.content ? article.content.substring(0, 160) + '...' : '';
+  const imageUrl = article.image_url || '/placeholder.jpg';
+
   return {
-    title: article.original_headline || article.headline || article.title,
-    description: article.excerpt,
+    title: title,
+    description: description,
     openGraph: {
-      title: article.original_headline || article.headline || article.title,
-      description: article.excerpt,
-      images: article.imageUrl ? [article.imageUrl] : [],
+      title: title,
+      description: description,
+      images: imageUrl ? [imageUrl] : [],
     },
   };
 }
@@ -207,6 +211,7 @@ export default async function ArticlePage({ params }: Props) {
   // Validate required data
   const title = article.original_headline || article.headline || article.title;
   const content = article.content?.trim();
+  
   if (!content || !title) {
     console.error('Invalid article data - missing content or title:', {
       id: article.id,

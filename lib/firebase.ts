@@ -13,14 +13,6 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
-// Debug: Log the config to check if environment variables are loaded
-console.log('🔧 Firebase config check:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-  projectId: firebaseConfig.projectId
-});
-
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
@@ -28,7 +20,5 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 export const db = getFirestore(app)
 export const auth = getAuth(app)
 export const storage = getStorage(app)
-
-console.log('✅ Firebase initialized successfully');
 
 export default app

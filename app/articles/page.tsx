@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { fetchAllContent } from "@/lib/firebase-utils"
-import { AllArticlesFeed } from "@/components/all-articles-feed"
+import AllArticlesFeed from "@/components/all-articles-feed"
 
 export const metadata: Metadata = {
   title: "All Articles - OminiSphere",
